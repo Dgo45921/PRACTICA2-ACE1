@@ -1,7 +1,10 @@
+include utils.asm
+
+
 .model small
 .stack
 .data
-    mensaje db "Hola mundo, estoy aprendiendo assembler$"
+    mensaje db "----------------------------------------------",10,"Universidad de San Carlos de Guatemala" ,10 , "Facultad de ingenieria", 10,"Escuela de Vacaciones",10,"Arquitectura de Computadoras y Ensambladores 1",10,"Diego Andres Huite Alvarez",10, "202003585",10, "----------------------------------------------" ,"$"
 .code
 
     main PROC
@@ -10,9 +13,8 @@
     mov ds, ax
 
     ; imprimir en consola
-    mov dx, offset mensaje
-    mov ah, 9
-    int 21h
+    printString mensaje
+   
     .exit
 
     main ENDP
