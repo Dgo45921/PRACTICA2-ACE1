@@ -1,10 +1,18 @@
 include utils.asm
 
-
+.radix 16
 .model small
 .stack
 .data
-    mensaje db "----------------------------------------------",10,"Universidad de San Carlos de Guatemala" ,10 , "Facultad de ingenieria", 10,"Escuela de Vacaciones",10,"Arquitectura de Computadoras y Ensambladores 1",10,"Diego Andres Huite Alvarez",10, "202003585",10, "----------------------------------------------" ,"$"
+    ;mensajes -------------------------------------------------------------------------------------------------------
+    mensajeBienvenida db "----------------------------------------------",0A,"Universidad de San Carlos de Guatemala" ,0A , "Facultad de ingenieria", 0A,"Escuela de Vacaciones",0A,"Arquitectura de Computadores y Ensambladores 1",0A,"Diego Andres Huite Alvarez",0A, "202003585",0A, "----------------------------------------------" ,"$"
+    credentialFileConfirmation db "EXISTE EL ARCHIVO","$"
+    credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
+    newLine db 0A, "$"
+    ; variables para archivos
+
+    handlecredentialFile dw 0000
+    pathcredentialFile db "asm\pra\PRAII.CON",0 ; la ruta donde asm tiene que buscar
 .code
 
     main PROC
@@ -12,9 +20,34 @@ include utils.asm
     mov ax, @data
     mov ds, ax
 
-    ; imprimir en consola
-    printString mensaje
-   
+    ; imprimir el encabezado
+    printString mensajeBienvenida
+
+
+    mov AL, 02
+		mov AH, 3d
+		mov DX, offset pathcredentialFile
+		int 21
+		;; si no lo cremos
+		jc  credentialFileFailed
+		;; si abre escribimos
+		jmp credentialFileSuccess
+    
+    credentialFileFailed:
+        printString newLine
+        printString credentialFileNotExistent
+         jmp exit
+    
+    credentialFileSuccess:
+        printString newLine
+        printString credentialFileConfirmation
+       
+    
+
+    
+
+    
+   exit:
     .exit
 
     main ENDP
