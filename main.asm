@@ -8,7 +8,7 @@ include utils.asm
     credentialFileConfirmation db "EXISTE EL ARCHIVO",0A,"$"
     credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
     lexicalError  db "ERROR LEXICO EN ARCHIVO","$"
-    exito  db "ya estoy en el igual","$"
+    exito  db "ya estoy en la comilla","$"
     newLine db 0A, "$"
     quote db '"'
     ; variables para archivos
@@ -17,13 +17,14 @@ include utils.asm
     pathcredentialFile db "asm\pra\PRAII.CON",0 ; la ruta donde asm tiene que buscar
     ; variables proposito general
     trueCond db 1
+    firstquoteIndex dw 0
+    secondquoteIndex dw 0
 
 
     ; buffers
     readBuffer db 50 dup(0), "$"
 
     ; Logged User
-    fullName db 20 dup(0), "$"
     username db 10 dup(0), "$"
 
 
@@ -66,7 +67,7 @@ include utils.asm
     credentialFileSuccess:
         printString newLine
         printString credentialFileConfirmation
-        ; guardamos el handle
+        
         
     readCredentialFile:
         mov BX, [handlecredentialFile]
@@ -197,14 +198,15 @@ include utils.asm
     jne headerFail
 
     ;EMPEZANDO A CONTAR ESPACIOS EN BLANCO--------------------------------------------------------------------
-
+    inc si
     mov trueCond, 1b
 
     whileSpaces:
         cmp trueCond, 1b
         jne EXITWHILE
         
-        cmp readBuffer[si], ' '
+        mov al, readBuffer[si]
+        cmp al, ' '
         jne UPDATECONDITION
         inc si
         jmp whileSpaces
@@ -216,20 +218,174 @@ include utils.asm
 
     EXITWHILE:
 
-    cmp readBuffer[si], '='
-    je equalchecker
+    mov al, readBuffer[si]
+    cmp al , '='
+    jne headerFail
 
 
     ; aca ya conto espacios y deberia de estar en el =
 
     equalchecker:
-
-    printString exito
-
-
+        inc si
+        mov trueCond, 1b
     
+    whileSpaces2:
+        cmp trueCond, 1b
+        jne EXITWHILE2
+        
+        mov al, readBuffer[si]
+        cmp al, ' '
+        jne UPDATECONDITION2
+        inc si
+        jmp whileSpaces2
+        
+
+        UPDATECONDITION2:
+
+        mov trueCond, 0b
+
+    EXITWHILE2:
+
+    cmp readBuffer[si], '"'
+    jne headerFail
+    usernameChecker:
+        mov firstquoteIndex, si
+        inc si
+    ; ACA YA ENCONTRE UNA COMILLA Y DEBO DE SEGUIR RECORRIENDO HASTA ENCONTRAR OTRA
+     mov trueCond, 1b
+     loopToSecondQuote:
+        cmp trueCond, 1b
+        jne EXITWHILE3
+        
+        mov al, readBuffer[si]
+        cmp readBuffer[si], 0D
+        je headerFail
+        cmp readBuffer[si], '"'
+        je UPDATECONDITION3
+        inc si
+        jmp loopToSecondQuote
+        
+
+        UPDATECONDITION3:
+
+        mov trueCond, 0b
+
+    EXITWHILE3:
+    ; verificamos si viene salto de linea
+        mov secondquoteIndex, si
+       
+
+     
+    ; ya guardando el username   
+    xor si, si
+    xor di, di
+    mov si, firstquoteIndex
+    inc si ; moviendome al primer caracter luego de la primera comilla
+    mov trueCond, 1b
+
+    loopSaveusername:
+        cmp trueCond, 1b
+        jne exitLoopUsername
+  
+        cmp readBuffer[si], '"'
+        je exitLoopUsername
+        mov bh, readBuffer[si]
+        mov username[di], bh 
+
+        inc si
+        inc di
+        jmp loopSaveusername
+    exitLoopUsername:
+        printString username
+    
+    xor di, di
+    mov si, secondquoteIndex
+    inc si
+    mov al, readBuffer[si]
+    cmp al, 0D
+    jne headerFail
 
 
+    ; inc si
+    ; inc si
+
+    ; mov al, readBuffer[si]
+    ; cmp al, 'c'             ;verificamos que venga el salto de c
+    ; jne headerFail
+
+    ; inc si
+    ; mov al, readBuffer[si]
+    ; cmp al, 'l'            ;verificamos que venga el salto de l
+    ; jne headerFail
+
+    ; inc si
+    ; mov al, readBuffer[si]
+    ; cmp al, 'a'            ;verificamos que venga el salto de a   
+    ; jne headerFail
+
+    ; inc si
+    ; mov al, readBuffer[si]
+    ; cmp al, 'v'            ;verificamos que venga el salto de v    
+    ; jne headerFail
+
+    ; inc si
+    ; mov al, readBuffer[si]
+    ; cmp al, 'e'            ;verificamos que venga el salto de e     
+    ; jne headerFail
+
+
+
+
+    ;manejo clave------------------------------------------------------------------------------------------------------------
+    ; mov trueCond, 1b
+
+    ; whileSpacesClave:
+    ;     cmp trueCond, 1b
+    ;     jne EXITWHILE3
+        
+    ;     cmp readBuffer[si], ' '
+    ;     jne UPDATECONDITIONCLAVE
+    ;     inc si
+    ;     jmp whileSpacesClave
+        
+
+    ;     UPDATECONDITIONCLAVE:
+
+    ;     mov trueCond, 0b
+
+    ; EXITWHILESpacesClave:
+
+    ; cmp readBuffer[si], '='
+    ; je equalchecker2
+
+
+    ; ; aca ya conto espacios y deberia de estar en el =
+
+    ; equalchecker2:
+    ;     inc si
+    ;     inc si
+    ;     mov trueCond, 1b
+    
+    ; whileSpacesClave2:
+    ;     cmp trueCond, 1b
+    ;     jne EXITWHILE2
+        
+    ;     cmp readBuffer[si], ' '
+    ;     jne UPDATECONDITION2
+    ;     inc si
+    ;     jmp whileSpacesClave2
+        
+
+    ;     UPDATECONDITION2:
+
+    ;     mov trueCond, 0b
+
+    ; EXITWHILE2:
+
+
+    ; cmp readBuffer[si], '"'
+    ; jne headerFail
+ 
 
     
    exit:
