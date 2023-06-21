@@ -5,6 +5,7 @@ include utils.asm
 .data
     ;mensajes -------------------------------------------------------------------------------------------------------
     mensajeBienvenida db "----------------------------------------------",0A,"Universidad de San Carlos de Guatemala" ,0A , "Facultad de ingenieria", 0A,"Escuela de Vacaciones",0A,"Arquitectura de Computadores y Ensambladores 1",0A,"Diego Andres Huite Alvarez",0A, "202003585",0A, "----------------------------------------------" ,"$"
+    bienvenido db "BIENVENIDO: ","$"
     credentialFileConfirmation db "EXISTE EL ARCHIVO",0A,"$"
     credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
     lexicalError  db "ERROR LEXICO EN ARCHIVO","$"
@@ -444,7 +445,48 @@ include utils.asm
         ; aca se han guardado las dos credenciales
         ; printString username
         ; printString password
- 
+    
+    ; COMPARANDO EL NOMBRE DE USUARIO
+
+    xor si, si
+    xor bx, bx
+    forLoopUsername:
+        cmp si, 9
+        je exitForLoopUsername
+
+        mov al, username[si]
+        cmp al, realUsername[si]
+        jne headerFail
+
+        inc si
+        jmp forLoopUsername
+
+
+ exitForLoopUsername:
+    ; printString username
+    ; printString password
+
+; COMPARANDO LA CLAVE ------------------------------------------------------------------------------------------------
+
+    xor si, si
+    xor bx, bx
+    forloopPassword:
+        cmp si, 0A
+        je exitforloopPassword
+
+        mov al, password[si]
+        mov bl, realPassword[si]
+        cmp al, realPassword[si]
+        jne headerFail
+
+        inc si
+        jmp forloopPassword
+
+
+ exitforloopPassword:
+    
+    printString bienvenido
+    printString username
 
     
    exit:
