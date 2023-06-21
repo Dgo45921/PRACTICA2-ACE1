@@ -5,13 +5,12 @@ include utils.asm
 .data
     ;mensajes -------------------------------------------------------------------------------------------------------
     mensajeBienvenida db "----------------------------------------------",0A,"Universidad de San Carlos de Guatemala" ,0A , "Facultad de ingenieria", 0A,"Escuela de Vacaciones",0A,"Arquitectura de Computadores y Ensambladores 1",0A,"Diego Andres Huite Alvarez",0A, "202003585",0A, "----------------------------------------------" ,"$"
+    userMenu db "Ingrese el caracter entre parentesis",0A, "--------MENU PRINCIPAL--------" ,0A,"(P)roductos",0A, "(H)erramientas",  "$"
     bienvenido db "BIENVENIDO: ","$"
     credentialFileConfirmation db "EXISTE EL ARCHIVO",0A,"$"
     credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
-    lexicalError  db "ERROR LEXICO EN ARCHIVO","$"
-    exito  db "ya estoy en la comilla","$"
+    lexicalError  db "ERROR EN ARCHIVO","$"
     newLine db 0A, "$"
-    quote db '"'
     ; variables para archivos
     auxCounter db 0000
     handlecredentialFile dw 0000
@@ -30,8 +29,8 @@ include utils.asm
 
     realUsername db "dalvarez", "$"
     realPassword db "202003585", "$"
-    username db 8 dup('x'), "$"
-    password db 9 dup('a'), "$"
+    username db 8 dup(0), "$"
+    password db 9 dup(0), "$"
 
 
     ; ESTRUCTURAS
@@ -153,6 +152,10 @@ include utils.asm
         mov al, readBuffer[si]
         cmp al, 0D            ;verificamos que venga el salto de linea     
         jne headerFail
+        inc si
+        mov al, readBuffer[si]
+        cmp al, 0A            ;verificamos que venga el salto de linea     
+        jne headerFail
         
 
     headerSuccess:
@@ -166,7 +169,7 @@ include utils.asm
 
     
     userchecker:
-    inc si
+
     inc si
 
     mov al, readBuffer[si]
@@ -310,10 +313,14 @@ include utils.asm
     mov al, readBuffer[si]
     cmp al, 0D
     jne headerFail
+    inc si
+    mov al, readBuffer[si]
+    cmp al, 0A            ;verificamos que venga el salto de linea     
+    jne headerFail
 
 ;manejo clave------------------------------------------------------------------------------------------------------------
     inc si
-    inc si
+
 
     mov al, readBuffer[si]
     cmp al, 'c'             ;verificamos que venga el salto de c
@@ -487,12 +494,27 @@ include utils.asm
     
     printString bienvenido
     printString username
+    printString newLine
 
-    
-   exit:
+; aca ya sabemos que la credenciales son correctas
+    welcomeEnter:
+    enterkeyHandler ; recibe el input de un char 
+    cmp al, 0D     ; compara para ver si fue un enter
+    jne welcomeEnter
+
+    displayUserMenu:
+        printString userMenu
+
+
+
+
+    exit:
     .exit
 
     main ENDP
+
+
+
 
 end main
 

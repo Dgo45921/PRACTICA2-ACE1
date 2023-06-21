@@ -5,6 +5,12 @@ printString macro cadena
 endm
 
 
+enterkeyHandler macro 
+    mov ah, 08h
+    int 21h
+endm
+
+
 searchFile macro path
     mov al, 01h
     mov dx, offset path
