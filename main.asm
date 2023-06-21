@@ -25,7 +25,12 @@ include utils.asm
     readBuffer db 50 dup(0), "$"
 
     ; Logged User
-    username db 10 dup(0), "$"
+
+
+    realUsername db "dalvarez", "$"
+    realPassword db "202003585", "$"
+    username db 8 dup('x'), "$"
+    password db 9 dup('a'), "$"
 
 
     ; ESTRUCTURAS
@@ -296,7 +301,7 @@ include utils.asm
         inc di
         jmp loopSaveusername
     exitLoopUsername:
-        printString username
+        ;printString username
     
     xor di, di
     mov si, secondquoteIndex
@@ -305,86 +310,140 @@ include utils.asm
     cmp al, 0D
     jne headerFail
 
+;manejo clave------------------------------------------------------------------------------------------------------------
+    inc si
+    inc si
 
-    ; inc si
-    ; inc si
+    mov al, readBuffer[si]
+    cmp al, 'c'             ;verificamos que venga el salto de c
+    jne headerFail
 
-    ; mov al, readBuffer[si]
-    ; cmp al, 'c'             ;verificamos que venga el salto de c
-    ; jne headerFail
+    inc si
+    mov al, readBuffer[si]
+    cmp al, 'l'            ;verificamos que venga el salto de l
+    jne headerFail
 
-    ; inc si
-    ; mov al, readBuffer[si]
-    ; cmp al, 'l'            ;verificamos que venga el salto de l
-    ; jne headerFail
+    inc si
+    mov al, readBuffer[si]
+    cmp al, 'a'            ;verificamos que venga el salto de a   
+    jne headerFail
 
-    ; inc si
-    ; mov al, readBuffer[si]
-    ; cmp al, 'a'            ;verificamos que venga el salto de a   
-    ; jne headerFail
+    inc si
+    mov al, readBuffer[si]
+    cmp al, 'v'            ;verificamos que venga el salto de v    
+    jne headerFail
 
-    ; inc si
-    ; mov al, readBuffer[si]
-    ; cmp al, 'v'            ;verificamos que venga el salto de v    
-    ; jne headerFail
-
-    ; inc si
-    ; mov al, readBuffer[si]
-    ; cmp al, 'e'            ;verificamos que venga el salto de e     
-    ; jne headerFail
-
-
+    inc si
+    mov al, readBuffer[si]
+    cmp al, 'e'            ;verificamos que venga el salto de e     
+    jne headerFail
 
 
-    ;manejo clave------------------------------------------------------------------------------------------------------------
-    ; mov trueCond, 1b
 
-    ; whileSpacesClave:
-    ;     cmp trueCond, 1b
-    ;     jne EXITWHILE3
+; contando espacios en blanco -----------------------------------------------------------------
+    inc si
+   
+    mov trueCond, 1b
+
+    whileSpacesClave:
+        cmp trueCond, 1b
+        jne EXITWHILESpacesClave
         
-    ;     cmp readBuffer[si], ' '
-    ;     jne UPDATECONDITIONCLAVE
-    ;     inc si
-    ;     jmp whileSpacesClave
+        cmp readBuffer[si], ' '
+        jne UPDATECONDITIONCLAVE
+        inc si
+        jmp whileSpacesClave
         
 
-    ;     UPDATECONDITIONCLAVE:
+        UPDATECONDITIONCLAVE:
 
-    ;     mov trueCond, 0b
+        mov trueCond, 0b
 
-    ; EXITWHILESpacesClave:
+    EXITWHILESpacesClave:
+       
 
-    ; cmp readBuffer[si], '='
-    ; je equalchecker2
+    cmp readBuffer[si], '='
+    je equalchecker2
+    jmp headerFail
 
 
     ; ; aca ya conto espacios y deberia de estar en el =
 
-    ; equalchecker2:
-    ;     inc si
-    ;     inc si
-    ;     mov trueCond, 1b
-    
-    ; whileSpacesClave2:
-    ;     cmp trueCond, 1b
-    ;     jne EXITWHILE2
+     equalchecker2:
+        inc si
+        mov trueCond, 1b
+    ; recorre espacios luego del =
+    whileSpacesClave2:
+        cmp trueCond, 1b
+        jne EXITWHILESpacesClave2
         
-    ;     cmp readBuffer[si], ' '
-    ;     jne UPDATECONDITION2
-    ;     inc si
-    ;     jmp whileSpacesClave2
+        mov al, readBuffer[si]
+        cmp al, ' '
+        jne UPDATECONDITIONCLAVE2
+        inc si
+        jmp whileSpacesClave2
         
 
-    ;     UPDATECONDITION2:
+        UPDATECONDITIONCLAVE2:
 
-    ;     mov trueCond, 0b
+        mov trueCond, 0b
 
-    ; EXITWHILE2:
+    EXITWHILESpacesClave2:
 
+    cmp readBuffer[si], '"'
+    jne headerFail
+    passwordchecker:
+        mov firstquoteIndex, si
+        inc si
+        
+    ; ACA YA ENCONTRE UNA COMILLA Y DEBO DE SEGUIR RECORRIENDO HASTA ENCONTRAR OTRA
+     mov trueCond, 1b
+     loopToSecondQuote2:
+        cmp trueCond, 1b
+        jne EXITWHILESECOND
+        
+        mov al, readBuffer[si]
+        cmp readBuffer[si], 0D
+        je headerFail
+        cmp readBuffer[si], '"'
+        je UPDATECONDITIONsq
+        inc si
+        jmp loopToSecondQuote2
+        
 
-    ; cmp readBuffer[si], '"'
-    ; jne headerFail
+        UPDATECONDITIONsq:
+
+        mov trueCond, 0b
+
+    EXITWHILESECOND:
+    ; verificamos si viene salto de linea
+        mov secondquoteIndex, si
+       
+
+     
+    ; ya guardando el password
+    xor si, si
+    xor di, di
+    mov si, firstquoteIndex
+    inc si ; moviendome al primer caracter luego de la primera comilla
+    mov trueCond, 1b
+
+    loopSavepassword:
+        cmp trueCond, 1b
+        jne exitLooppassword
+  
+        cmp readBuffer[si], '"'
+        je exitLooppassword
+        mov bh, readBuffer[si]
+        mov password[di], bh 
+
+        inc si
+        inc di
+        jmp loopSavepassword
+    exitLooppassword:
+        ; aca se han guardado las dos credenciales
+        ; printString username
+        ; printString password
  
 
     
