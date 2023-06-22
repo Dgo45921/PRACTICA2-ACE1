@@ -927,9 +927,16 @@ ThirdConditionRegexloopProductDesc:
 ; UNA VEZ INGRESADA TODA LA DATA, NECESITAMOS VERIFICAR QUE EL ARCHIVO PROD.BIN EXISTA
     searchFile pathProductFile
         jc prodFileCreator
+         ; nos movemos al final del archivo
+        mov [handleprodFile], ax 
+        mov cx, 00
+        mov dx, 00
+        mov al, 2
+        mov ah, 42
+        mov bx, [handleprodFile]
+        int 21
+
         ; escribir el producto
-       ; escribir el producto
-        mov [handleprodFile], ax
         mov bx, [handleprodFile]
         mov cx, 28
         mov dx, offset codigoProducto  
