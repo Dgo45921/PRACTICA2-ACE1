@@ -22,6 +22,7 @@ include utils.asm
 
 
     inserProductCode  db "Codigo de producto: ","$"
+    inserProductDesc  db "Desc del producto: ","$"
     ; variables para archivos
     auxCounter db 0000
     handlecredentialFile dw 0000
@@ -32,14 +33,16 @@ include utils.asm
     trueCond db 1
     condition1 db 0
     condition2 db 0
+    condition3 db 0
+
     firstquoteIndex dw 0
     secondquoteIndex dw 0
 
 
     ; buffers
     readBuffer db 50 dup(0), "$"
-    inputBuffer db   20, 00 
-    db  20 dup (0)
+    inputBuffer db   21, 00 
+    db  21 dup (0)
 
     ; Logged User
 
@@ -639,8 +642,130 @@ include utils.asm
             jmp RegexloopProductCode
         exitRegexLoopProductCode:
             ;printString lel2
+            
+;PIDIENDO DESCRIPCION DEL PRODUCTO -------------------------------------------------------------------------
+    askForProductDesc:
+        printString inserProductDesc
+        saveBufferedInput inputBuffer
+        printString newLine
+        bufferPrinter inputBuffer
+        xor si, si
+        inc si
+        mov al, inputBuffer[si]
+        cmp al, 0 ; verificamos que el input sea distinto de cero
+        je askForProductDesc
+        cmp al, 20 ; verificamos que el input sea de 32 caracteres como maximo
+        jb saveProductDesc
+        jmp askForProductDesc
+    saveProductDesc:
+        xor si, si
+        inc si
+        mov bl, inputBuffer[si] ; guardamos el size del input
+        inc si
+        ; nos movemos al byte que contiene el primer caracter de la entrada
+        xor di, di
+        mov trueCond, 1
+        ; guardamos cada caracter en su respectiva variable
+    forProductDesc:
+        cmp di, 20 ; 32 iteraciones a hacer
+        je exitforProductDesc
+        mov al, inputBuffer[si]
+        cmp al, 0D
+        je exitforProductDesc
+        mov descProducto[di], al
+        
+        inc di
+        inc si
+        jmp forProductDesc
+
+
+    exitforProductDesc:
+
+    ; limpiamos si
+    xor si, si
+    mov condition1, 0
+    mov condition2, 0
+    RegexloopProductDesc:
+        cmp si, 20
+        je exitRegexLoopProductDesc
+
+        cmp descProducto[si], 0 ;NULL CHAR
+        je continueRegexloopProductDesc
+        cmp descProducto[si], 2C ; , CHAR
+        je continueRegexloopProductDesc
+        cmp descProducto[si], 21 ; ! CHAR
+        je continueRegexloopProductDesc
+        cmp descProducto[si], 2E ; ! CHAR
+        je continueRegexloopProductDesc
+        ; verificamos que cada caracter del codigo sea letra mayus o numero
+        ; condicion: if[ (caracter >= minLetra && caracter <= maxletra) || (caracter >= minNum && caracter <= maxNum) ]
+        ; minletra = 41 = A(ascii) |  maxletra = 5A = Z(ascii)
+        ; minNum = 30 = 0(ascii) |  maxNum = 39 = 9(ascii)
+
+
+        FirstConditionRegexloopProductDesc:
+        ; printString lel1
+        ; printString newLine
+        mov al, descProducto[si]
+        cmp al, 41
+        jl clearFirstConditionRegexloopProductDesc
+        cmp al, 5A
+        jg clearFirstConditionRegexloopProductDesc
+        mov condition1, 1
+        jmp SecondConditionRegexloopProductDesc
+
+        clearFirstConditionRegexloopProductDesc:
+        mov condition1, 0
+        jmp SecondConditionRegexloopProductDesc
+
+;--------------------------------------------------------------------------------------------
+        SecondConditionRegexloopProductDesc:
+        ; printString lel1
+        ; printString newLine
+        mov al, descProducto[si]
+        cmp al, 30
+        jl clearSecondConditionRegexloopProductDesc
+        cmp al, 39
+        jg clearSecondConditionRegexloopProductDesc
+        mov condition2, 1
+        jmp ThirdConditionRegexloopProductDesc
+
+        clearSecondConditionRegexloopProductDesc:
+        mov condition2, 0
+        jmp ThirdConditionRegexloopProductDesc
+
+;------------------------------------------------------------------------------------------------
+ThirdConditionRegexloopProductDesc:
+        ; printString lel3
+        ; printString newLine
+        mov al, descProducto[si]
+        cmp al, 61 ;CHAR a
+        jl clearThirdConditionRegexloopProductDesc
+        cmp al, 7A; char z
+        jg clearThirdConditionRegexloopProductDesc
+        mov condition3, 1
+        jmp ComparationConditionRegexloopProductDesc
+        clearThirdConditionRegexloopProductDesc:
+        mov condition3, 0
+
+;--------------------------------------------------------------------------------------------------
+        ComparationConditionRegexloopProductDesc:
+        mov bl, condition1
+        or bl, condition2
+        or bl, condition3
+
+        cmp bl, 0
+        je askForProductDesc
+
+        continueRegexloopProductDesc:
+            inc si
+            jmp RegexloopProductDesc
+        exitRegexLoopProductDesc:
+            ;printString lel2
             jmp displayProductMenu ; quitar luego, aca hay que seguir pidiendo campos
 
+
+jmp displayProductMenu ; quitar luego, aca hay que seguir pidiendo campos
 
 
     displayToolsMenu:
