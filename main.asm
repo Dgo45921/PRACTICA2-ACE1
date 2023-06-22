@@ -23,6 +23,8 @@ include utils.asm
 
     inserProductCode  db "Codigo de producto: ","$"
     inserProductDesc  db "Desc del producto: ","$"
+    inserProductPrice  db "Precio: ","$"
+    inserProductUnits  db "Unidades: ","$"
     ; variables para archivos
     auxCounter db 0000
     handlecredentialFile dw 0000
@@ -762,10 +764,89 @@ ThirdConditionRegexloopProductDesc:
             jmp RegexloopProductDesc
         exitRegexLoopProductDesc:
             ;printString lel2
-            jmp displayProductMenu ; quitar luego, aca hay que seguir pidiendo campos
+
+;PEDIMOS PRECIO DEL PRODUCTO --------------------------------------------------------------------------------------
+    askForProductPrice:
+        printString inserProductPrice
+        saveBufferedInput inputBuffer
+        printString newLine
+        bufferPrinter inputBuffer
+        xor si, si
+        inc si
+        mov al, inputBuffer[si]
+        cmp al, 0 ; verificamos que el input sea distinto de cero
+        je askForProductPrice
+        cmp al, 03 ; verificamos que el input sea de 2 caracteres como maximo
+        jb saveProductPrice
+        jmp askForProductPrice
+    saveProductPrice:
+        xor si, si
+        inc si
+        mov bl, inputBuffer[si] ; guardamos el size del input
+        inc si
+        ; nos movemos al byte que contiene el primer caracter de la entrada
+        xor di, di
+        mov trueCond, 1
+        ; guardamos cada caracter en su respectiva variable
+    forProductPrice:
+        cmp di, 02
+        je exitforProductPrice
+        mov al, inputBuffer[si]
+        cmp al, 0D
+        je exitforProductPrice
+        mov productPrice[di], al
+        
+        inc di
+        inc si
+        jmp forProductPrice
 
 
-jmp displayProductMenu ; quitar luego, aca hay que seguir pidiendo campos
+    exitforProductPrice:
+
+    ; limpiamos si
+    xor si, si
+    mov condition1, 0
+    RegexloopProductPrice:
+        cmp si, 2
+        je exitRegexLoopProductPrice
+
+        cmp productPrice[si], 0
+        je continueRegexloopProductPrice
+        ; verificamos que cada caracter del codigo sea letra mayus o numero
+        ; condicion: if[ (caracter >= minLetra && caracter <= maxletra) || (caracter >= minNum && caracter <= maxNum) ]
+        ; minletra = 41 = A(ascii) |  maxletra = 5A = Z(ascii)
+        ; minNum = 30 = 0(ascii) |  maxNum = 39 = 9(ascii)
+
+
+        FirstConditionRegexloopProductPrice:
+        ; printString lel1
+        ; printString newLine
+        mov al, productPrice[si]
+        cmp al, 30
+        jl clearFirstConditionRegexloopProductPrice
+        cmp al, 39
+        jg clearFirstConditionRegexloopProductPrice
+        mov condition1, 1
+        jmp ComparationConditionRegexloopProductPrice
+
+        clearFirstConditionRegexloopProductPrice:
+        mov condition1, 0
+
+
+;------------------------------------------------------------------------------------------------
+        ComparationConditionRegexloopProductPrice:
+        mov bl, condition1
+
+        cmp bl, 0
+        je askForProductPrice
+
+        continueRegexloopProductPrice:
+            inc si
+            jmp RegexloopProductPrice
+        exitRegexLoopProductPrice:
+
+
+        jmp displayProductMenu ; quitar luego, aca hay que seguir pidiendo campos
 
 
     displayToolsMenu:
