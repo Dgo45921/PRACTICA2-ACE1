@@ -31,6 +31,14 @@ saveBufferedInput macro buffer
     int 21h
 endm
 
+saveCurrentProduct macro handle
+    mov bx, [handleprodFile]
+    mov cx, 28
+    mov dx, offset codigoProducto  
+    mov ah, 40
+    int 21
+endm
+
 bufferPrinter macro buffer2
     
     mov bx, 01

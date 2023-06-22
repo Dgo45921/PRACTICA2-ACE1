@@ -57,7 +57,7 @@ include utils.asm
 
     ; ESTRUCTURAS
     codigoProducto db 04 dup(0)
-    descProducto db 32 dup(0)
+    descProducto db 20 dup(0)
     productPrice db 02 dup(0)
     productUnits db 02 dup(0)
     
@@ -924,7 +924,41 @@ ThirdConditionRegexloopProductDesc:
             jmp RegexloopProductUnits
         exitRegexLoopProductUnits:
 
-        jmp displayProductMenu ; quitar luego, aca hay que seguir pidiendo campos
+; UNA VEZ INGRESADA TODA LA DATA, NECESITAMOS VERIFICAR QUE EL ARCHIVO PROD.BIN EXISTA
+    searchFile pathProductFile
+        jc prodFileCreator
+        ; escribir el producto
+       ; escribir el producto
+        mov [handleprodFile], ax
+        mov bx, [handleprodFile]
+        mov cx, 28
+        mov dx, offset codigoProducto  
+        mov ah, 40
+        int 21
+        ; cerramos el archivo
+        mov ah, 3E
+        int 21
+        jmp displayProductMenu
+        jmp displayProductMenu
+
+
+    prodFileCreator:
+        
+        mov [handleprodFile], ax
+        mov ah, 3E
+        mov bx, [handleprodFile]
+        int 21
+        ; escribir el producto
+        mov [handleprodFile], ax
+        mov bx, [handleprodFile]
+        mov cx, 28
+        mov dx, offset codigoProducto  
+        mov ah, 40
+        int 21
+        ; cerramos el archivo
+        mov ah,  3E
+        int 21
+        jmp displayProductMenu
 
 
     displayToolsMenu:
