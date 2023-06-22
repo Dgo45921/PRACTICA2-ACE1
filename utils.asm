@@ -44,3 +44,4 @@ bufferPrinter macro buffer2
     int 21h
     printString newLine
 endm
+

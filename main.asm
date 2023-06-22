@@ -31,8 +31,8 @@ include utils.asm
 
     ; buffers
     readBuffer db 50 dup(0), "$"
-    inputBuffer db   05, 00 
-    db  05 dup (0)
+    inputBuffer db   20, 00 
+    db  20 dup (0)
 
     ; Logged User
 
@@ -531,14 +531,46 @@ include utils.asm
         cmp al, 0D
         je  displayUserMenu
         cmp al, '1'
-        je askForProductDetails
+        je askForProductCode
         jmp displayProductMenu
 
-    askForProductDetails:
+    askForProductCode:
         printString inserProductCode
         saveBufferedInput inputBuffer
         printString newLine
         bufferPrinter inputBuffer
+        xor si, si
+        inc si
+        mov al, inputBuffer[si]
+        cmp al, 0 ; verificamos que el input sea distinto de cero
+        je askForProductCode
+        cmp al, 05 ; verificamos que el input sea de 4 caracteres como maximo
+        jb saveProductCode
+        jmp askForProductCode
+    saveProductCode:
+        xor si, si
+        inc si
+        mov bl, inputBuffer[si] ; guardamos el size del input
+        inc si
+        ; nos movemos al byte que contiene el primer caracter de la entrada
+        xor di, di
+        mov trueCond, 1
+    forProductCode:
+        cmp di, 04
+        je exitforProductCode
+        mov al, inputBuffer[si]
+        cmp al, 0D
+        je exitforProductCode
+        mov codigoProducto[di], al
+        
+        inc di
+        inc si
+        jmp forProductCode
+
+
+    exitforProductCode:
+
+
         jmp displayUserMenu
 
 
