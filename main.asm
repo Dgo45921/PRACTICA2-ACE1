@@ -5,7 +5,9 @@ include utils.asm
 .data
     ;mensajes -------------------------------------------------------------------------------------------------------
     mensajeBienvenida db "----------------------------------------------",0A,"Universidad de San Carlos de Guatemala" ,0A , "Facultad de ingenieria", 0A,"Escuela de Vacaciones",0A,"Arquitectura de Computadores y Ensambladores 1",0A,"Diego Andres Huite Alvarez",0A, "202003585",0A, "----------------------------------------------" ,"$"
-    userMenu db "Ingrese el caracter entre parentesis",0A, "--------MENU PRINCIPAL--------" ,0A,"(P)roductos",0A, "(H)erramientas",  "$"
+    userMenu db "Ingrese el caracter entre parentesis",0A, "--------MENU PRINCIPAL--------" ,0A,"(p)roductos",0A, "(h)erramientas", 0A,  "$"
+    productMenu db "Ingrese el indice",0A, "--------MENU PRODUCTOS--------" ,0A,"1.Ingreso",0A, "2.Eliminacion",0A, "3.Visualizacion", 0A, "4.Ventas", 0A, "$"
+    toolsMenu db "Ingrese el indice",0A, "--------MENU HERRAMIENTAS--------" ,0A,"1.Catalogo",0A, "2.Reporte alfabetico",0A, "3.Reporte ventas", 0A, "4.Productos sin existencias", 0A, "$"
     bienvenido db "BIENVENIDO: ","$"
     credentialFileConfirmation db "EXISTE EL ARCHIVO",0A,"$"
     credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
@@ -14,7 +16,9 @@ include utils.asm
     ; variables para archivos
     auxCounter db 0000
     handlecredentialFile dw 0000
+    handleprodFile dw 0000
     pathcredentialFile db "asm\pra\PRAII.CON",0 ; la ruta donde asm tiene que buscar
+    pathProductFile db "asm\pra\PROD.BIN",0 ; 
     ; variables proposito general
     trueCond db 1
     firstquoteIndex dw 0
@@ -497,6 +501,18 @@ include utils.asm
     printString newLine
 
 ; aca ya sabemos que la credenciales son correctas
+    searchFile pathProductFile
+    jc prodFileCreator
+    jmp welcomeEnter
+
+    prodFileCreator:
+        fileCreator pathProductFile
+        mov [handleprodFile], ax
+        mov ah, 3E
+        mov bx, [handleprodFile]
+        int 21
+
+
     welcomeEnter:
     enterkeyHandler ; recibe el input de un char 
     cmp al, 0D     ; compara para ver si fue un enter
@@ -504,6 +520,27 @@ include utils.asm
 
     displayUserMenu:
         printString userMenu
+        enterkeyHandler
+        cmp al, 'p'
+        je displayProductMenu
+        cmp al, 'h'
+        je displayToolsMenu
+        cmp al, 'q'
+        je exit
+    
+    displayProductMenu:
+        printString productMenu
+        enterkeyHandler
+        cmp al, 0D
+        je  displayUserMenu
+        jmp displayProductMenu
+
+    displayToolsMenu:
+        printString toolsMenu
+        enterkeyHandler
+        cmp al, 0D
+        je  displayUserMenu
+        jmp displayToolsMenu
 
 
 
