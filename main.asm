@@ -5,14 +5,18 @@ include utils.asm
 .data
     ;mensajes -------------------------------------------------------------------------------------------------------
     mensajeBienvenida db "----------------------------------------------",0A,"Universidad de San Carlos de Guatemala" ,0A , "Facultad de ingenieria", 0A,"Escuela de Vacaciones",0A,"Arquitectura de Computadores y Ensambladores 1",0A,"Diego Andres Huite Alvarez",0A, "202003585",0A, "----------------------------------------------" ,"$"
-    userMenu db "Ingrese el caracter entre parentesis",0A, "--------MENU PRINCIPAL--------" ,0A,"(p)roductos",0A, "(h)erramientas", 0A,  "$"
-    productMenu db "Ingrese el indice",0A, "--------MENU PRODUCTOS--------" ,0A,"1.Ingreso",0A, "2.Eliminacion",0A, "3.Visualizacion", 0A, "4.Ventas", 0A, "$"
+    userMenu db "Ingrese el caracter entre parentesis",0A, "--------MENU PRINCIPAL--------" ,0A,"(p)roductos",0A, "(v)entas",0A, "(h)erramientas", 0A,  "$"
+    productMenu db "Ingrese el indice",0A, "--------MENU PRODUCTOS--------" ,0A,"1.Ingreso",0A, "2.Eliminacion",0A, "3.Visualizacion", 0A, "$"
     toolsMenu db "Ingrese el indice",0A, "--------MENU HERRAMIENTAS--------" ,0A,"1.Catalogo",0A, "2.Reporte alfabetico",0A, "3.Reporte ventas", 0A, "4.Productos sin existencias", 0A, "$"
+    salesTitle db  "--------Ventas--------" , "$"
     bienvenido db "BIENVENIDO: ","$"
     credentialFileConfirmation db "EXISTE EL ARCHIVO",0A,"$"
     credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
     lexicalError  db "ERROR EN ARCHIVO","$"
     newLine db 0A, "$"
+
+
+    inserProductCode  db "Codigo de producto: ","$"
     ; variables para archivos
     auxCounter db 0000
     handlecredentialFile dw 0000
@@ -27,6 +31,8 @@ include utils.asm
 
     ; buffers
     readBuffer db 50 dup(0), "$"
+    inputBuffer db   20, 00 
+    db  20 dup (0)
 
     ; Logged User
 
@@ -501,17 +507,6 @@ include utils.asm
     printString newLine
 
 ; aca ya sabemos que la credenciales son correctas
-    searchFile pathProductFile
-    jc prodFileCreator
-    jmp welcomeEnter
-
-    prodFileCreator:
-        fileCreator pathProductFile
-        mov [handleprodFile], ax
-        mov ah, 3E
-        mov bx, [handleprodFile]
-        int 21
-
 
     welcomeEnter:
     enterkeyHandler ; recibe el input de un char 
@@ -525,6 +520,8 @@ include utils.asm
         je displayProductMenu
         cmp al, 'h'
         je displayToolsMenu
+        cmp al, 'v'
+        je displaySalesMenu
         cmp al, 'q'
         je exit
     
@@ -533,7 +530,15 @@ include utils.asm
         enterkeyHandler
         cmp al, 0D
         je  displayUserMenu
+        cmp al, '1'
+        je askForProductDetails
         jmp displayProductMenu
+
+    askForProductDetails:
+        printString inserProductCode
+        saveBufferedInput inputBuffer
+        jmp displayUserMenu
+
 
     displayToolsMenu:
         printString toolsMenu
@@ -542,6 +547,9 @@ include utils.asm
         je  displayUserMenu
         jmp displayToolsMenu
 
+    displaySalesMenu:
+        printString salesTitle
+        jmp displayUserMenu
 
 
 
