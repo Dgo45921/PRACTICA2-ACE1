@@ -844,7 +844,85 @@ ThirdConditionRegexloopProductDesc:
             inc si
             jmp RegexloopProductPrice
         exitRegexLoopProductPrice:
+;PEDIMOS UNIDADES DEL PRODUCTO --------------------------------------------------------------------------------------
+    askForProductUnits:
+        printString inserProductUnits
+        saveBufferedInput inputBuffer
+        printString newLine
+        bufferPrinter inputBuffer
+        xor si, si
+        inc si
+        mov al, inputBuffer[si]
+        cmp al, 0 ; verificamos que el input sea distinto de cero
+        je askForProductUnits
+        cmp al, 03 ; verificamos que el input sea de 2 caracteres como maximo
+        jb saveProductUnits
+        jmp askForProductUnits
+    saveProductUnits:
+        xor si, si
+        inc si
+        mov bl, inputBuffer[si] ; guardamos el size del input
+        inc si
+        ; nos movemos al byte que contiene el primer caracter de la entrada
+        xor di, di
+        mov trueCond, 1
+        ; guardamos cada caracter en su respectiva variable
+    forProductUnits:
+        cmp di, 02
+        je exitforProductUnits
+        mov al, inputBuffer[si]
+        cmp al, 0D
+        je exitforProductUnits
+        mov productUnits[di], al
+        
+        inc di
+        inc si
+        jmp forProductUnits
 
+
+    exitforProductUnits:
+
+    ; limpiamos si
+    xor si, si
+    mov condition1, 0
+    RegexloopProductUnits:
+        cmp si, 2
+        je exitRegexLoopProductUnits
+
+        cmp productUnits[si], 0
+        je continueRegexloopProductUnits
+        ; verificamos que cada caracter del codigo sea letra mayus o numero
+        ; condicion: if[ (caracter >= minLetra && caracter <= maxletra) || (caracter >= minNum && caracter <= maxNum) ]
+        ; minletra = 41 = A(ascii) |  maxletra = 5A = Z(ascii)
+        ; minNum = 30 = 0(ascii) |  maxNum = 39 = 9(ascii)
+
+
+        FirstConditionRegexloopProductUnits:
+        ; printString lel1
+        ; printString newLine
+        mov al, productUnits[si]
+        cmp al, 30
+        jl clearFirstConditionRegexloopProductUnits
+        cmp al, 39
+        jg clearFirstConditionRegexloopProductUnits
+        mov condition1, 1
+        jmp ComparationConditionRegexloopProductUnits
+
+        clearFirstConditionRegexloopProductUnits:
+        mov condition1, 0
+
+
+;------------------------------------------------------------------------------------------------
+        ComparationConditionRegexloopProductUnits:
+        mov bl, condition1
+
+        cmp bl, 0
+        je askForProductUnits
+
+        continueRegexloopProductUnits:
+            inc si
+            jmp RegexloopProductUnits
+        exitRegexLoopProductUnits:
 
         jmp displayProductMenu ; quitar luego, aca hay que seguir pidiendo campos
 
