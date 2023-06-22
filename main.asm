@@ -31,8 +31,8 @@ include utils.asm
 
     ; buffers
     readBuffer db 50 dup(0), "$"
-    inputBuffer db   20, 00 
-    db  20 dup (0)
+    inputBuffer db   05, 00 
+    db  05 dup (0)
 
     ; Logged User
 
@@ -537,6 +537,8 @@ include utils.asm
     askForProductDetails:
         printString inserProductCode
         saveBufferedInput inputBuffer
+        printString newLine
+        bufferPrinter inputBuffer
         jmp displayUserMenu
 
 
