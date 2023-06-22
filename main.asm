@@ -13,6 +13,11 @@ include utils.asm
     credentialFileConfirmation db "EXISTE EL ARCHIVO",0A,"$"
     credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
     lexicalError  db "ERROR EN ARCHIVO","$"
+    lel1  db "lel1","$"
+    lel2  db "CADENA ACEPTADA","$"
+    lel3  db "lel3","$"
+    lel4  db "hey se cumplio la condicion","$"
+    ; lel5  db "lel5","$"
     newLine db 0A, "$"
 
 
@@ -25,6 +30,8 @@ include utils.asm
     pathProductFile db "asm\pra\PROD.BIN",0 ; 
     ; variables proposito general
     trueCond db 1
+    condition1 db 0
+    condition2 db 0
     firstquoteIndex dw 0
     secondquoteIndex dw 0
 
@@ -524,6 +531,7 @@ include utils.asm
         je displaySalesMenu
         cmp al, 'q'
         je exit
+        jmp displayUserMenu
     
     displayProductMenu:
         printString productMenu
@@ -555,6 +563,7 @@ include utils.asm
         ; nos movemos al byte que contiene el primer caracter de la entrada
         xor di, di
         mov trueCond, 1
+        ; guardamos cada caracter en su respectiva variable
     forProductCode:
         cmp di, 04
         je exitforProductCode
@@ -570,8 +579,68 @@ include utils.asm
 
     exitforProductCode:
 
+    ; limpiamos si
+    xor si, si
+    mov condition1, 0
+    mov condition2, 0
+    RegexloopProductCode:
+        cmp si, 4
+        je exitRegexLoopProductCode
 
-        jmp displayUserMenu
+        cmp codigoProducto[si], 0
+        je continueRegexloopProductCode
+        ; verificamos que cada caracter del codigo sea letra mayus o numero
+        ; condicion: if[ (caracter >= minLetra && caracter <= maxletra) || (caracter >= minNum && caracter <= maxNum) ]
+        ; minletra = 41 = A(ascii) |  maxletra = 5A = Z(ascii)
+        ; minNum = 30 = 0(ascii) |  maxNum = 39 = 9(ascii)
+
+
+        FirstConditionRegexloopProductCode:
+        ; printString lel1
+        ; printString newLine
+        mov al, codigoProducto[si]
+        cmp al, 41
+        jl clearFirstConditionRegexloopProductCode
+        cmp al, 5A
+        jg clearFirstConditionRegexloopProductCode
+        mov condition1, 1
+        jmp SecondConditionRegexloopProductCode
+
+        clearFirstConditionRegexloopProductCode:
+        mov condition1, 0
+        jmp SecondConditionRegexloopProductCode
+
+;--------------------------------------------------------------------------------------------
+        SecondConditionRegexloopProductCode:
+        ; printString lel3
+        ; printString newLine
+        mov al, codigoProducto[si]
+        cmp al, 30
+        jl clearSecondConditionRegexloopProductCode
+        cmp al, 39
+        jg clearSecondConditionRegexloopProductCode
+        mov condition2, 1
+        jmp ComparationConditionRegexloopProductCode
+
+
+        clearSecondConditionRegexloopProductCode:
+        mov condition2, 0
+
+;------------------------------------------------------------------------------------------------
+        ComparationConditionRegexloopProductCode:
+        mov bl, condition1
+        or bl, condition2
+
+        cmp bl, 0
+        je askForProductCode
+
+        continueRegexloopProductCode:
+            inc si
+            jmp RegexloopProductCode
+        exitRegexLoopProductCode:
+            ;printString lel2
+            jmp displayProductMenu ; quitar luego, aca hay que seguir pidiendo campos
+
 
 
     displayToolsMenu:
