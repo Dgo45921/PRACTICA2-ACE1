@@ -539,6 +539,7 @@ include utils.asm
         jmp displayUserMenu
     
     displayProductMenu:
+        clearVariables
         printString productMenu
         enterkeyHandler
         cmp al, 0D
@@ -950,13 +951,12 @@ ThirdConditionRegexloopProductDesc:
 
 
     prodFileCreator:
-        
+        mov CX, 0000
+		mov DX, offset pathProductFile
+		mov AH, 3c
+		int 21
         mov [handleprodFile], ax
-        mov ah, 3E
-        mov bx, [handleprodFile]
-        int 21
         ; escribir el producto
-        mov [handleprodFile], ax
         mov bx, [handleprodFile]
         mov cx, 28
         mov dx, offset codigoProducto  
