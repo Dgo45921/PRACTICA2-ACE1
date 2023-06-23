@@ -3,7 +3,9 @@ include utils.asm
 .model small
 .stack
 .data
+cerosProd db 2E dup(0)
 numero           db   05 dup (30)
+
     ;mensajes -------------------------------------------------------------------------------------------------------
     mensajeBienvenida db "----------------------------------------------",0A,"Universidad de San Carlos de Guatemala" ,0A , "Facultad de ingenieria", 0A,"Escuela de Vacaciones",0A,"Arquitectura de Computadores y Ensambladores 1",0A,"Diego Andres Huite Alvarez",0A, "202003585",0A, "----------------------------------------------" ,"$"
     userMenu db "Ingrese el caracter entre parentesis",0A, "--------MENU PRINCIPAL--------" ,0A,"(p)roductos",0A, "(v)entas",0A, "(h)erramientas", 0A,  "$"
@@ -42,6 +44,7 @@ numero           db   05 dup (30)
 
     firstquoteIndex dw 0
     secondquoteIndex dw 0
+    puntero_temp dw 0000
 
 
     ; buffers
@@ -59,6 +62,7 @@ numero           db   05 dup (30)
 
 
      ;STRING ESTRUCTURAS
+    
     auxcodigoProducto db 04 dup(0), "$"
     auxdescProducto db 20 dup(0), "$"
     auxproductPrice db 05 dup(0), "$"
@@ -1089,11 +1093,71 @@ askForProductCodeToDelete:
     exitforProductCodeToDelete:
 
     openProdFile:
+    ; abrimos el archivo de productos
+        mov dx, 0000
+        mov [puntero_temp], dx
+        
         mov ah, 3D
         mov al, 02
         mov dx, offset pathProductFile
+        int 21
+        jc headerFail
+        mov [handleprodFile], ax
+
+    ; leemos todo el archivo
+    searchProdToDelete:
+        mov ah, 3f
+        mov bx, [handleprodFile]
+        mov cx, 2E
+        mov dx, offset codigoProducto
+        int 21
+        mov dx, [puntero_temp]
+        add dx, 2E
+        mov [puntero_temp], dx
+         
+        cmp ax, 00
+        je closeProdFile
+        ; loop para comparar el codigo ingresado con el codigo leido
+        
+        xor si, si
+
+
+        LoopComparingProductToDelete:
+            cmp si, 4
+            je delProduct
+
+            mov bl, codigoProducto[si]
+            cmp bl, auxcodigoProducto[si]
+            jne searchProdToDelete
+
+        continueLoopComparingProductToDelete:
+            inc si
+            jmp LoopComparingProductToDelete
+
+    delProduct:
+        printString lel1
+        ; nos posicionamos en el producto a eliminar
+        mov dx, [puntero_temp]
+        sub dx, 2E
+        mov cx, 0000
+        mov bx, [handleprodFile]
+        mov al, 0
+        mov ah, 42
+        int 21
+        ; escribimos 0s en el archivo
+        mov cx, 2E
+        mov dx, offset cerosProd
+        mov ah, 40
+        int 21
+
+
         
 
+    ; cerramos el archivo de productos
+    closeProdFile:
+        mov ah, 3E
+        mov bx, [handleprodFile]
+        int 21
 
 
 
@@ -1172,6 +1236,14 @@ aumentar_siguiente_digito:
 		pop DI         ; se recupera DI
 		loop ciclo_convertirAcadena
 retorno_convertirAcadena:
+		ret
+
+memset:
+ciclo_memset:
+		mov AL, 00
+		mov [DI], AL
+		inc DI
+		loop ciclo_memset
 		ret
 
     exit:
