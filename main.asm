@@ -3,6 +3,7 @@ include utils.asm
 .model small
 .stack
 .data
+numero           db   05 dup (30)
     ;mensajes -------------------------------------------------------------------------------------------------------
     mensajeBienvenida db "----------------------------------------------",0A,"Universidad de San Carlos de Guatemala" ,0A , "Facultad de ingenieria", 0A,"Escuela de Vacaciones",0A,"Arquitectura de Computadores y Ensambladores 1",0A,"Diego Andres Huite Alvarez",0A, "202003585",0A, "----------------------------------------------" ,"$"
     userMenu db "Ingrese el caracter entre parentesis",0A, "--------MENU PRINCIPAL--------" ,0A,"(p)roductos",0A, "(v)entas",0A, "(h)erramientas", 0A,  "$"
@@ -60,14 +61,17 @@ include utils.asm
      ;STRING ESTRUCTURAS
     auxcodigoProducto db 04 dup(0), "$"
     auxdescProducto db 20 dup(0), "$"
-    auxproductPrice db 02 dup(0), "$"
-    auxproductUnits db 02 dup(0), "$"
+    auxproductPrice db 05 dup(0), "$"
+    auxproductUnits db 05 dup(0), "$"
     ;ESTRUCTURAS
     codigoProducto db 04 dup(0)
     descProducto db 20 dup(0)
-    productPrice db 02 dup(0)
-    productUnits db 02 dup(0)
-    ; pesan 40 bytes o 28 en hex
+    productPrice db 05 dup(0)
+    productUnits db 05 dup(0)
+
+    numPrice   dw 0000
+    numUnits   dw 0000
+    ; pesan 46 bytes o 28 en hex
     
 .code
 
@@ -581,7 +585,7 @@ include utils.asm
         je exitloopReadProductData
         mov ah, 3F
         mov bx, [handleprodFile]
-        mov cx, 28 
+        mov cx, 2E 
         mov dx, offset codigoProducto
         int 21
         cmp AX, 00
@@ -589,15 +593,15 @@ include utils.asm
         ; aca guardo en un string auxiliar cada campo recibido del producto
         createAuxProdCod
         createAuxProdDesc
-        createAuxProdPrice
-        createAuxProdUnits
+        ; createAuxProdPrice
+        ; createAuxProdUnits
         printString auxcodigoProducto
         printString spaces
         printString auxdescProducto
-        printString spaces
-        printString auxproductPrice
-        printString spaces
-        printString auxproductUnits
+        ; printString spaces
+        ; printString auxproductPrice
+        ; printString spaces
+        ; printString auxproductUnits
 
         
         printString newLine
@@ -849,7 +853,7 @@ ThirdConditionRegexloopProductDesc:
         mov al, inputBuffer[si]
         cmp al, 0 ; verificamos que el input sea distinto de cero
         je askForProductPrice
-        cmp al, 03 ; verificamos que el input sea de 2 caracteres como maximo
+        cmp al, 06 ; verificamos que el input sea de 5 caracteres como maximo
         jb saveProductPrice
         jmp askForProductPrice
     saveProductPrice:
@@ -862,7 +866,7 @@ ThirdConditionRegexloopProductDesc:
         mov trueCond, 1
         ; guardamos cada caracter en su respectiva variable
     forProductPrice:
-        cmp di, 02
+        cmp di, 05
         je exitforProductPrice
         mov al, inputBuffer[si]
         cmp al, 0D
@@ -880,7 +884,7 @@ ThirdConditionRegexloopProductDesc:
     xor si, si
     mov condition1, 0
     RegexloopProductPrice:
-        cmp si, 2
+        cmp si, 5
         je exitRegexLoopProductPrice
 
         cmp productPrice[si], 0
@@ -928,7 +932,7 @@ ThirdConditionRegexloopProductDesc:
         mov al, inputBuffer[si]
         cmp al, 0 ; verificamos que el input sea distinto de cero
         je askForProductUnits
-        cmp al, 03 ; verificamos que el input sea de 2 caracteres como maximo
+        cmp al, 06 ; verificamos que el input sea de 5 caracteres como maximo
         jb saveProductUnits
         jmp askForProductUnits
     saveProductUnits:
@@ -941,7 +945,7 @@ ThirdConditionRegexloopProductDesc:
         mov trueCond, 1
         ; guardamos cada caracter en su respectiva variable
     forProductUnits:
-        cmp di, 02
+        cmp di, 05
         je exitforProductUnits
         mov al, inputBuffer[si]
         cmp al, 0D
@@ -959,7 +963,7 @@ ThirdConditionRegexloopProductDesc:
     xor si, si
     mov condition1, 0
     RegexloopProductUnits:
-        cmp si, 2
+        cmp si, 5
         je exitRegexLoopProductUnits
 
         cmp productUnits[si], 0
@@ -997,6 +1001,9 @@ ThirdConditionRegexloopProductDesc:
             jmp RegexloopProductUnits
         exitRegexLoopProductUnits:
 
+     
+
+
 ; UNA VEZ INGRESADA TODA LA DATA, NECESITAMOS VERIFICAR QUE EL ARCHIVO PROD.BIN EXISTA
     searchFile pathProductFile
         jc prodFileCreator
@@ -1011,7 +1018,7 @@ ThirdConditionRegexloopProductDesc:
 
         ; escribir el producto
         mov bx, [handleprodFile]
-        mov cx, 28
+        mov cx, 2E
         mov dx, offset codigoProducto  
         mov ah, 40
         int 21
@@ -1030,7 +1037,7 @@ ThirdConditionRegexloopProductDesc:
         mov [handleprodFile], ax
         ; escribir el producto
         mov bx, [handleprodFile]
-        mov cx, 28
+        mov cx, 2E
         mov dx, offset codigoProducto  
         mov ah, 40
         int 21
@@ -1053,7 +1060,65 @@ ThirdConditionRegexloopProductDesc:
 
 
 
+    ; SUBRUTINAS---------------------------------------------------------------------------------
+    cadenaAnum:
+		mov AX, 0000    ; inicializar la salida
+		mov CX, 0005    ; inicializar contador
+		;;
+seguir_convirtiendo:
+		mov BL, [DI]
+		cmp BL, 00
+		je retorno_cadenaAnum
+		sub BL, 30      ; BL es el valor numérico del caracter
+		mov DX, 000a
+		mul DX          ; AX * DX -> DX:AX
+		mov BH, 00
+		add AX, BX 
+		inc DI          ; puntero en la cadena
+		loop seguir_convirtiendo
+retorno_cadenaAnum:
+		ret
+
+         
+numAcadena:
+		mov CX, 0005
+		mov DI, offset numero
+ciclo_poner30s:
+		mov BL, 30
+		mov [DI], BL
+		inc DI
+		loop ciclo_poner30s
+		;; tenemos '0' en toda la cadena
+		mov CX, AX    ; inicializar contador
+		mov DI, offset numero
+		add DI, 0004
+		;;
+ciclo_convertirAcadena:
+		mov BL, [DI]
+		inc BL
+		mov [DI], BL
+		cmp BL, 3a
+		je aumentar_siguiente_digito_primera_vez
+		loop ciclo_convertirAcadena
+		jmp retorno_convertirAcadena
+aumentar_siguiente_digito_primera_vez:
+		push DI
+aumentar_siguiente_digito:
+		mov BL, 30     ; poner en '0' el actual
+		mov [DI], BL
+		dec DI         ; puntero a la cadena
+		mov BL, [DI]
+		inc BL
+		mov [DI], BL
+		cmp BL, 3a
+		je aumentar_siguiente_digito
+		pop DI         ; se recupera DI
+		loop ciclo_convertirAcadena
+retorno_convertirAcadena:
+		ret
+
     exit:
+   
     .exit
 
     main ENDP

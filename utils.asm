@@ -49,7 +49,7 @@ createAuxProdPrice macro
  xor di, di
 
  auxPriceLoop:
-    cmp di, 02
+    cmp di, 05
     jge exitauxPriceLoop
     mov al, productPrice[di]
     mov auxproductPrice[di], al
@@ -67,7 +67,7 @@ createAuxProdUnits macro
  xor di, di
 
  auxUnitsLoop:
-    cmp di, 02
+    cmp di, 05
     jge exitauxUnitsLoop
     mov al, productUnits[di]
     mov auxproductUnits[di], al
@@ -142,7 +142,7 @@ clearVariables macro
 ; LIMPIANDO PRECIO
 xor si, si
  ForClearProductPrice:
-    cmp si, 02
+    cmp si, 05
     jge exitForClearProductPrice
     mov productPrice[si], 00
 
@@ -153,7 +153,7 @@ xor si, si
 ; LIMPIANDO UNIDADES
  xor si, si
  ForClearProductUnits:
-    cmp si, 02
+    cmp si, 05
     jge exitForClearProductUnits
     mov productUnits[si], 00
 
@@ -161,6 +161,30 @@ xor si, si
     jmp ForClearProductUnits
 
  exitForClearProductUnits:
+
+
+ ; LIMPIANDO PRECIO
+xor si, si
+ ForClearProductPrice2:
+    cmp si, 10
+    jge exitForClearProductPrice2
+    mov numPrice[si], 00
+
+    inc si
+    jmp ForClearProductPrice2
+
+ exitForClearProductPrice2:
+; LIMPIANDO UNIDADES
+ xor si, si
+ ForClearProductUnits2:
+    cmp si, 10
+    jge exitForClearProductUnits2
+    mov numUnits[si], 00
+
+    inc si
+    jmp ForClearProductUnits2
+
+ exitForClearProductUnits2:
 
 
 
