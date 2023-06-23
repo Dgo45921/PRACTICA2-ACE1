@@ -3,6 +3,11 @@ include utils.asm
 .model small
 .stack
 .data
+ ;CLONES
+    CloncodigoProducto db 04 dup(0)
+    ClondescProducto db 20 dup(0)
+    ClonproductPrice db 05 dup(0)
+    ClonproductUnits db 05 dup(0)
 cerosProd db 2E dup(0)
 numero           db   05 dup (30)
 
@@ -76,6 +81,8 @@ numero           db   05 dup (30)
     numPrice   dw 0000
     numUnits   dw 0000
     ; pesan 46 bytes o 28 en hex
+
+   
     
 .code
 
@@ -1013,8 +1020,62 @@ ThirdConditionRegexloopProductDesc:
 ; UNA VEZ INGRESADA TODA LA DATA, NECESITAMOS VERIFICAR QUE EL ARCHIVO PROD.BIN EXISTA
     searchFile pathProductFile
         jc prodFileCreator
-         ; nos movemos al final del archivo
-        mov [handleprodFile], ax 
+        mov [handleprodFile], ax
+        ; nos movemos al final del archivo
+        ; BUSCAMOS EL ESPACIO VACIO
+        mov dx, 0000
+        mov [puntero_temp], dx
+
+
+        SearchEmptySpace:
+        mov ah, 3f
+        mov bx, [handleprodFile]
+        mov cx, 2E
+        mov dx, offset CloncodigoProducto
+        int 21
+
+        mov dx, [puntero_temp]
+        add dx, 2E
+        mov [puntero_temp], dx
+
+        xor si, si
+         
+        cmp ax, 00
+        je addtoEnd
+        cmp CloncodigoProducto [si] , 0
+        je addInMiddle
+        jmp SearchEmptySpace
+        ; loop para comparar el codigo ingresado con el codigo leido
+        
+        
+
+        addInMiddle:
+         ; nos posicionamos en el producto a ingresar
+        mov dx, [puntero_temp]
+        sub dx, 2E
+        mov cx, 0000
+        mov bx, [handleprodFile]
+        mov al, 0
+        mov ah, 42
+        int 21
+        ; escribimos el producto en si
+        mov cx, 2E
+        mov dx, offset codigoProducto
+        mov ah, 40
+        int 21
+
+     ; cerramos el archivo
+        mov bx, [handleprodFile]
+        mov ah, 3E
+        int 21
+            
+        jmp displayProductMenu
+
+
+      
+        addtoEnd:
+        ; agregamos al final del archivo
+ 
         mov cx, 00
         mov dx, 00
         mov al, 2
@@ -1029,10 +1090,11 @@ ThirdConditionRegexloopProductDesc:
         mov ah, 40
         int 21
         ; cerramos el archivo
+        mov bx, [handleprodFile]
         mov ah, 3E
         int 21
         jmp displayProductMenu
-        jmp displayProductMenu
+        
 
 
     prodFileCreator:
@@ -1135,7 +1197,7 @@ askForProductCodeToDelete:
             jmp LoopComparingProductToDelete
 
     delProduct:
-        printString lel1
+       
         ; nos posicionamos en el producto a eliminar
         mov dx, [puntero_temp]
         sub dx, 2E

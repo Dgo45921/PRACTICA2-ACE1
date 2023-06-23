@@ -84,7 +84,7 @@ endm
 
 
 searchFile macro path1
-    mov AL, 02
+   mov AL, 02
 	mov AH, 3Dh
 	mov DX, offset path1
 	int 21h
