@@ -32,8 +32,8 @@ numero           db   05 dup (30)
     auxCounter db 0000
     handlecredentialFile dw 0000
     handleprodFile dw 0000
-    pathcredentialFile db "asm\pra\PRAII.CON",0 ; la ruta donde asm tiene que buscar
-    pathProductFile db "asm\pra\PROD.BIN",0 ; 
+    pathcredentialFile db "PRAII.CON",0 ; la ruta donde asm tiene que buscar
+    pathProductFile db "PROD.BIN",0 ; 
     ; variables proposito general
     trueCond db 1
     condition1 db 0
@@ -558,6 +558,8 @@ numero           db   05 dup (30)
         je  displayUserMenu
         cmp al, '1'
         je askForProductCode
+        cmp al, '2'
+        je askForProductCodeToDelete
         cmp al, '3'
         je displayProducts
         jmp displayProductMenu
@@ -1045,6 +1047,61 @@ ThirdConditionRegexloopProductDesc:
         mov ah,  3E
         int 21
         jmp displayProductMenu
+
+
+; ACA OBTENEMOS EL INPUT PARA ELIMINAR UN PRODUCTO-------------------------------------------------------
+
+askForProductCodeToDelete:
+        printString inserProductCode
+        saveBufferedInput inputBuffer
+        printString newLine
+        bufferPrinter inputBuffer
+        xor si, si
+        inc si
+        mov al, inputBuffer[si]
+        cmp al, 0 ; verificamos que el input sea distinto de cero
+        je askForProductCodeToDelete
+        cmp al, 05 ; verificamos que el input sea de 4 caracteres como maximo
+        jb saveProductCodeToDelete
+        jmp askForProductCodeToDelete
+    saveProductCodeToDelete:
+        xor si, si
+        inc si
+        mov bl, inputBuffer[si] ; guardamos el size del input
+        inc si
+        ; nos movemos al byte que contiene el primer caracter de la entrada
+        xor di, di
+        mov trueCond, 1
+        ; guardamos cada caracter en su respectiva variable
+    forProductCodeToDelete:
+        cmp di, 04
+        je exitforProductCodeToDelete
+        mov al, inputBuffer[si]
+        cmp al, 0D
+        je exitforProductCodeToDelete
+        mov auxcodigoProducto[di], al
+        
+        inc di
+        inc si
+        jmp forProductCodeToDelete
+
+
+    exitforProductCodeToDelete:
+
+    openProdFile:
+        mov ah, 3D
+        mov al, 02
+        mov dx, offset pathProductFile
+        
+
+
+
+
+    jmp displayProductMenu
+
+
+
+
 
 
     displayToolsMenu:
