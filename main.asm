@@ -13,12 +13,14 @@ include utils.asm
     credentialFileConfirmation db "EXISTE EL ARCHIVO",0A,"$"
     credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
     lexicalError  db "ERROR EN ARCHIVO","$"
+    continueFiveProducts db "Ingrese enter si quiere ver otros 5 productos o 'q' si desea salir", "$"
     lel1  db "lel1","$"
     lel2  db "CADENA ACEPTADA","$"
     lel3  db "lel3","$"
     lel4  db "hey se cumplio la condicion","$"
     ; lel5  db "lel5","$"
     newLine db 0A, "$"
+    spaces db  "   ", "$"
 
 
     inserProductCode  db "Codigo de producto: ","$"
@@ -55,11 +57,17 @@ include utils.asm
     password db 9 dup(0), "$"
 
 
-    ; ESTRUCTURAS
+     ;STRING ESTRUCTURAS
+    auxcodigoProducto db 04 dup(0), "$"
+    auxdescProducto db 20 dup(0), "$"
+    auxproductPrice db 02 dup(0), "$"
+    auxproductUnits db 02 dup(0), "$"
+    ;ESTRUCTURAS
     codigoProducto db 04 dup(0)
     descProducto db 20 dup(0)
     productPrice db 02 dup(0)
     productUnits db 02 dup(0)
+    ; pesan 40 bytes o 28 en hex
     
 .code
 
@@ -192,41 +200,41 @@ include utils.asm
     
     userchecker:
 
-    inc si
+        inc si
 
-    mov al, readBuffer[si]
-    cmp al, 'u'            ;verificamos que venga el salto de u     
-    jne headerFail
+        mov al, readBuffer[si]
+        cmp al, 'u'            ;verificamos que venga el salto de u     
+        jne headerFail
 
-    inc si
-    mov al, readBuffer[si]
-    cmp al, 's'            ;verificamos que venga el salto de s     
-    jne headerFail
+        inc si
+        mov al, readBuffer[si]
+        cmp al, 's'            ;verificamos que venga el salto de s     
+        jne headerFail
 
-    inc si
-    mov al, readBuffer[si]
-    cmp al, 'u'            ;verificamos que venga el salto de u     
-    jne headerFail
+        inc si
+        mov al, readBuffer[si]
+        cmp al, 'u'            ;verificamos que venga el salto de u     
+        jne headerFail
 
-    inc si
-    mov al, readBuffer[si]
-    cmp al, 'a'            ;verificamos que venga el salto de a     
-    jne headerFail
+        inc si
+        mov al, readBuffer[si]
+        cmp al, 'a'            ;verificamos que venga el salto de a     
+        jne headerFail
 
-    inc si
-    mov al, readBuffer[si]
-    cmp al, 'r'            ;verificamos que venga el salto de r     
-    jne headerFail
+        inc si
+        mov al, readBuffer[si]
+        cmp al, 'r'            ;verificamos que venga el salto de r     
+        jne headerFail
 
-    inc si
-    mov al, readBuffer[si]
-    cmp al, 'i'            ;verificamos que venga el salto de i     
-    jne headerFail
+        inc si
+        mov al, readBuffer[si]
+        cmp al, 'i'            ;verificamos que venga el salto de i     
+        jne headerFail
 
-    inc si
-    mov al, readBuffer[si]
-    cmp al, 'o'            ;verificamos que venga el salto de o     
-    jne headerFail
+        inc si
+        mov al, readBuffer[si]
+        cmp al, 'o'            ;verificamos que venga el salto de o     
+        jne headerFail
 
     ;EMPEZANDO A CONTAR ESPACIOS EN BLANCO--------------------------------------------------------------------
     inc si
@@ -546,7 +554,71 @@ include utils.asm
         je  displayUserMenu
         cmp al, '1'
         je askForProductCode
+        cmp al, '3'
+        je displayProducts
         jmp displayProductMenu
+
+    displayProducts:
+    ;abriendo el archivo
+        mov ah, 3d
+        mov al, 02
+        mov dx, offset pathProductFile
+        int 21
+        jnc readFileTodisplayP
+        printString lexicalError
+        jmp displayProductMenu
+
+    readFileTodisplayP:
+    ; guardamos handle
+    mov [handleprodFile], ax
+
+    displayfiveProducts:
+    ; leemos archivo
+    xor si, si
+    
+    loopReadProductData:
+        cmp si, 5
+        je exitloopReadProductData
+        mov ah, 3F
+        mov bx, [handleprodFile]
+        mov cx, 28 
+        mov dx, offset codigoProducto
+        int 21
+        cmp AX, 00
+	    je exitloopReadProductData
+        ; aca guardo en un string auxiliar cada campo recibido del producto
+        createAuxProdCod
+        createAuxProdDesc
+        createAuxProdPrice
+        createAuxProdUnits
+        printString auxcodigoProducto
+        printString spaces
+        printString auxdescProducto
+        printString spaces
+        printString auxproductPrice
+        printString spaces
+        printString auxproductUnits
+
+        
+        printString newLine
+        inc si
+        jmp loopReadProductData
+    exitloopReadProductData:
+    printString continueFiveProducts
+    printString newLine
+    enterkeyHandler
+    cmp al, 0D
+    je displayfiveProducts
+    cmp al, 'q'
+    je closingFiveProducts
+    jmp exitloopReadProductData
+
+    closingFiveProducts:
+    ; cerramos archivo
+    mov bx, [handleprodFile]
+    mov ah, 3e
+    int 21
+    jmp displayProductMenu
 
     askForProductCode:
         printString inserProductCode

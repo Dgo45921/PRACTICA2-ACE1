@@ -11,6 +11,78 @@ enterkeyHandler macro
 endm
 
 
+createAuxProdCod macro
+ xor di, di
+
+ auxProdLoop:
+    cmp di, 4
+    jge exitauxProdLoop
+    mov al, codigoProducto[di]
+    mov auxcodigoProducto[di], al
+    inc di
+    jmp auxProdLoop
+
+
+ exitauxProdLoop:
+
+endm
+
+
+createAuxProdDesc macro
+ xor di, di
+
+ auxDescLoop:
+    cmp di, 20
+    jge exitauxDescLoop
+    mov al, descProducto[di]
+    mov auxdescProducto[di], al
+    inc di
+    jmp auxDescLoop
+
+
+ exitauxDescLoop:
+
+endm
+
+
+createAuxProdPrice macro
+ xor di, di
+
+ auxPriceLoop:
+    cmp di, 02
+    jge exitauxPriceLoop
+    mov al, productPrice[di]
+    mov auxproductPrice[di], al
+    inc di
+    jmp auxPriceLoop
+
+
+ exitauxPriceLoop:
+
+endm
+
+
+
+createAuxProdUnits macro
+ xor di, di
+
+ auxUnitsLoop:
+    cmp di, 02
+    jge exitauxUnitsLoop
+    mov al, productUnits[di]
+    mov auxproductUnits[di], al
+    inc di
+    jmp auxUnitsLoop
+
+
+ exitauxUnitsLoop:
+
+endm
+
+
+
+
+
 searchFile macro path1
     mov AL, 02
 	mov AH, 3Dh
