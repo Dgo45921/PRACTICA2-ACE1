@@ -57,10 +57,12 @@ pc_html                db     "</p>"
     handlecredentialFile dw 0000
     handleprodFile dw 0000
     handleCatalogFile dw 0000
+    handleFaltaFile dw 0000
     pathcredentialFile db "PRAII.CON",0 ; la ruta donde asm tiene que buscar
     pathProductFile db "PROD.BIN",0 ; 
     pathCatalogFile db "CATALG.HTM",0
     pathABCFile db "ABC.HTM",0
+    pathFalta db "FALTA.HTM",0
     ; variables proposito general
     trueCond db 1
     condition1 db 0
@@ -1260,6 +1262,8 @@ askForProductCodeToDelete:
         je  displayUserMenu
         cmp al, '1'
         je generateCatalog
+        cmp al, '4'
+        je generateFALTA
         jmp displayToolsMenu
 
     generateCatalog:
@@ -1272,7 +1276,7 @@ askForProductCodeToDelete:
 
 
         
-        ; creamos el archivo
+       ; creamos el archivo
         mov ah, 3c
         mov cx, 0
         mov dx, offset pathCatalogFile
@@ -1294,6 +1298,7 @@ askForProductCodeToDelete:
 		mov CL, 02
 		mov DX, offset numero + 03
         int 21
+
 
 
         ; agregamos los dos puntos 
@@ -1504,7 +1509,7 @@ askForProductCodeToDelete:
             mov AH, 40
             mov CH, 00
             mov CL, 05
-            mov DX, offset productPrice
+            mov DX, offset productUnits
             int 21
 
             ; Escribir cierre de td del producto
@@ -1541,7 +1546,293 @@ askForProductCodeToDelete:
             int 21
 
         jmp displayToolsMenu
-   
+
+; REPORTE PRODUCTOS SIN EXISTENCIAS ------------------------------------------------------------
+  generateFALTA:
+        ; abrimos el prod.bin
+            mov al, 2
+            mov ah, 3d
+            mov dx, offset pathProductFile
+            int 21
+            mov [handleprodFile], ax
+
+
+        
+        ; creamos el archivo
+        mov ah, 3c
+        mov cx, 0
+        mov dx, offset pathFalta
+        int 21
+        mov [handleFaltaFile], ax
+        ; agregamos fecha y hora
+        ; agregando hora
+        ;CH = hours
+        ;CL = minutes
+        mov ah, 2C
+        int 21
+        xor ax, ax
+        mov al, ch
+        call numAcadena
+        ; ESCRIBIENDO HORA
+        mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 02
+		mov DX, offset numero + 03
+        int 21
+
+
+        ; agregamos los dos puntos 
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 01
+            mov DX, offset dos_puntos
+            int 21
+
+
+
+        ; agregando minuto
+        ;CH = hours
+        ;CL = minutes
+        mov ah, 2C
+        int 21
+        xor ax, ax
+        mov al, cl
+        call numAcadena
+        ; ESCRIBIENDO MINUTO
+        mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 02
+		mov DX, offset numero + 03
+        int 21
+
+
+        ; agregamos unos espacios
+        mov BX, [handleFaltaFile]
+        mov AH, 40
+        mov CH, 00
+        mov CL, 03
+        mov DX, offset spaces
+        int 21
+
+        ;AGREGANDO FECHA
+        ; AGREGANDO DIA
+        mov ah, 2A
+        int 21
+        xor ax, ax
+        mov al, dl
+        call numAcadena
+        ; ESCRIBIENDO DIA
+        mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 02
+		mov DX, offset numero + 03
+        int 21
+        ; agregar una diagonal
+        mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 01
+		mov DX, offset diagonal
+        int 21
+
+        ; AGREGANDO MES
+        mov ah, 2A
+        int 21
+        xor ax, ax
+        mov al, dh
+        call numAcadena
+        ; ESCRIBIENDO MES
+        mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 02
+		mov DX, offset numero + 03
+        int 21
+
+         ; agregar una diagonal
+        mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 01
+		mov DX, offset diagonal
+        int 21
+
+         ; AGREGANDO AÑO
+        mov ah, 2A
+        int 21
+        xor ax, ax
+        mov ax, cx
+        call numAcadena
+        ; ESCRIBIENDO AÑO
+        mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 04
+		mov DX, offset numero + 01
+        int 21
+
+
+
+
+
+
+  
+        writehtmlFalta:
+        ;encabezado del html
+		mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, [tam_encabezado_html]
+		mov DX, offset encabezado_html
+        int 21
+        ; inicializacion tabla
+        mov BX, [handleFaltaFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, [tam_inicializacion_tabla]
+		mov DX, offset inicializacion_tabla
+        int 21
+        ; ; LOOP ENTRE TODOS LOS PRODUCTOS
+        loopProdcutsFalta:
+            
+           
+            mov ah, 3f
+            mov bx, [handleprodFile]
+            mov cx, 2E
+            mov dx, offset codigoProducto
+            int 21
+            cmp ax, 0000
+            je exitProductFaltaLoop
+
+            mov di, offset productUnits
+            call cadenaAnum
+            cmp ax, 0000
+            jne loopProdcutsFalta
+            
+            ; abrir etiqueta tr
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset tr_html
+            int 21
+            ; abrir etiqueta td codigo producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset td_html
+            int 21
+            ; Escribir codigo de producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset codigoProducto
+            int 21
+            ; Escribir cierre de td del producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset tdc_html
+            int 21
+             ; abrir etiqueta td codigo producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset td_html
+            int 21
+            
+            ; Escribir desc del producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 20
+            mov DX, offset descProducto
+            int 21
+            ; Escribir cierre de td del producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset tdc_html
+            int 21
+             ; abrir etiqueta td codigo producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset td_html
+            int 21
+            ; Escribir precio del producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset productPrice
+            int 21
+            ; Escribir cierre de td del producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset tdc_html
+            int 21
+             ; abrir etiqueta td codigo producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset td_html
+            int 21
+            ; Escribir unidades del producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset productUnits
+            int 21
+
+            ; Escribir cierre de td del producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset tdc_html
+            int 21
+            ; Escribir cierre de tr del producto
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset trc_html
+            int 21
+
+        
+        jmp loopProdcutsFalta
+
+        exitProductFaltaLoop:
+            ; escribir cierre de tabla
+     
+            mov BX, [handleFaltaFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, tam_cierre_tabla
+            mov DX, offset cierre_tabla
+            int 21
+
+            ; cerrar el archivo
+            mov bx, [handleFaltaFile]
+            mov ah, 3E
+            int 21
+
+        jmp displayToolsMenu  
 
 
 
@@ -1552,13 +1843,15 @@ askForProductCodeToDelete:
 
 
 ; SUBRUTINAS---------------------------------------------------------------------------------
-    cadenaAnum:
+cadenaAnum:
 		mov AX, 0000    ; inicializar la salida
 		mov CX, 0005    ; inicializar contador
 		;;
 seguir_convirtiendo:
 		mov BL, [DI]
 		cmp BL, 00
+		je retorno_cadenaAnum
+        cmp BL, 30
 		je retorno_cadenaAnum
 		sub BL, 30      ; BL es el valor numérico del caracter
 		mov DX, 000a
@@ -1569,7 +1862,6 @@ seguir_convirtiendo:
 		loop seguir_convirtiendo
 retorno_cadenaAnum:
 		ret
-
  ;-------------------------------------------------------------------------------------------------        
 numAcadena:
 		mov CX, 0005
