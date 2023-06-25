@@ -1990,6 +1990,7 @@ askForProductCodeToDelete:
          mov [letraMin], 61 ; caracter a
          mov [letraMay], 41 ; caracter A
          mov iterableABC, 0
+         mov [contadorLetra], 0000
 
         
 
@@ -2150,6 +2151,168 @@ askForProductCodeToDelete:
             jmp ForLetras
 
         SalirForLetras:
+         
+        ; AHORA LO MISMO PERO EN VEZ DE NUMEROS, LETRAS
+        ; ; LOOP ENTRE TODOS LOS NUMEROS
+
+        mov [letraMin], 30 ; caracter 0
+        mov iterableABC, 0
+
+
+        ForNums:
+            mov ax, 0000
+            mov [contadorLetra], ax
+            cmp iterableABC, 0A
+            jge SalirForNums
+
+             ; abrimos el prod.bin
+            mov al, 2
+            mov ah, 3d
+            mov dx, offset pathProductFile
+            int 21
+            mov [handleprodFile], ax
+
+             
+
+            ; recorremos cada elemento del archivo de productos
+            loopProdcutsABC2:
+                mov ah, 3F
+                mov bx, [handleprodFile]
+                mov cx, 2E
+                mov dx, offset codigoProducto
+                int 21
+                cmp ax, 0000
+                je ContinueForNums
+                ; comparamos si empieza con la letra actual del loop
+
+                xor ax, ax
+                mov al, descProducto[0]
+                cmp [letraMin], al
+                je increaseNumCount
+
+                jmp continueReading2
+                
+            
+                increaseNumCount:
+                    inc contadorLetra 
+                    jmp loopProdcutsABC2
+
+                continueReading2:
+                    
+                    jmp loopProdcutsABC2
+
+
+    
+        ContinueForNums:
+            ;cerramos el archivo.bin para luego reabrirlo luego
+            mov bx, [handleprodFile]
+            mov ah, 3E
+            int 21
+            ;continue
+
+
+            ; abrir etiqueta tr
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset tr_html
+            int 21
+
+             ; abrir etiqueta td
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset td_html
+            int 21
+
+            ; escribir letra
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 01
+            xor dx, dx
+            mov dx, offset letraMin
+            int 21
+
+             ; cerrar etiqueta td
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset tdc_html
+            int 21
+
+
+
+            ;------------------
+               ;abrir etiqueta td
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset td_html
+            int 21
+
+            ; escribir numero
+
+
+
+            mov ax, [contadorLetra]
+            cmp ax, 0000
+            je escribirCeros2
+
+
+
+
+            call numAcadena
+
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            xor dx, dx
+            mov dx, offset numero
+            int 21
+            jmp cerrarTD2
+
+            escribirCeros2:
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            xor dx, dx
+            mov dx, offset ceritos
+            int 21
+
+            cerrarTD2:
+
+             ; cerrar etiqueta td
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset tdc_html
+            int 21
+
+            
+            ; Escribir cierre de tr del producto
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset trc_html
+            int 21
+          
+
+
+
+            inc letraMin
+            inc iterableABC
+            jmp ForNums
+
+        SalirForNums:
          ; escribir cierre de tabla
             mov BX, [handleABCFile]
             mov AH, 40
@@ -2162,6 +2325,8 @@ askForProductCodeToDelete:
             mov bx, [handleABCFile]
             mov ah, 3E
             int 21
+
+
         jmp displayToolsMenu
 
 
