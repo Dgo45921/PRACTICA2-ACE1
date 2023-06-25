@@ -3,12 +3,15 @@ include utils.asm
 .model small
 .stack
 .data
+ceritos           db     "00000"
 dos_puntos           db     ":"
 diagonal              db     "/"
 tam_encabezado_html    db     0c
 encabezado_html        db     "<html><body>"
 tam_inicializacion_tabla   db   5E
+tam_inicializacion_tablaABC   db   3A
 inicializacion_tabla   db     '<table border="1"><tr><td>codigo</td><td>descripcion</td><td>Precio</td><td>Unidades</td></tr>'
+inicializacion_tablaABC   db     '<table border="1"><tr><td>LETRA</td><td>CANTIDAD</td></tr>'
 tam_cierre_tabla       db     8
 cierre_tabla           db     "</table>"
 tam_footer_html        db     0e
@@ -19,6 +22,8 @@ tr_html                db     "<tr>"
 trc_html               db     "</tr>"
 p_html                 db     "<p>"
 pc_html                db     "</p>"
+letraMin               db     0000
+letraMay               db     0000
 
  ;CLONES
     CloncodigoProducto db 04 dup(0)
@@ -58,6 +63,7 @@ pc_html                db     "</p>"
     handleprodFile dw 0000
     handleCatalogFile dw 0000
     handleFaltaFile dw 0000
+    handleABCFile dw 0000
     pathcredentialFile db "PRAII.CON",0 ; la ruta donde asm tiene que buscar
     pathProductFile db "PROD.BIN",0 ; 
     pathCatalogFile db "CATALG.HTM",0
@@ -68,6 +74,8 @@ pc_html                db     "</p>"
     condition1 db 0
     condition2 db 0
     condition3 db 0
+    iterableABC db 0000
+    contadorLetra dw 0000
 
     firstquoteIndex dw 0
     secondquoteIndex dw 0
@@ -684,6 +692,7 @@ pc_html                db     "</p>"
         xor di, di
         mov trueCond, 1
         ; guardamos cada caracter en su respectiva variable
+        
     forProductCode:
         cmp di, 04
         je exitforProductCode
@@ -1262,6 +1271,8 @@ askForProductCodeToDelete:
         je  displayUserMenu
         cmp al, '1'
         je generateCatalog
+        cmp al, '2'
+        je generateABC
         cmp al, '4'
         je generateFALTA
         jmp displayToolsMenu
@@ -1425,7 +1436,7 @@ askForProductCodeToDelete:
             int 21
             cmp ax, 0000
             je exitProductCatalogLoop
-            printString lel1
+            ;printString lel1
             ; abrir etiqueta tr
             mov BX, [handleCatalogFile]
             mov AH, 40
@@ -1834,12 +1845,333 @@ askForProductCodeToDelete:
 
         jmp displayToolsMenu  
 
+    ; GENERADOR DE REPORTE ALFABETICO //////////////////////////////////////////////////////////////////
+    generateABC:
+       
+
+       ; creamos el archivo
+        mov ah, 3c
+        mov cx, 0
+        mov dx, offset pathABCFile
+        int 21
+        mov [handleABCFile], ax
+        ; agregamos fecha y hora
+        ; agregando hora
+        ;CH = hours
+        ;CL = minutes
+        mov ah, 2C
+        int 21
+        xor ax, ax
+        mov al, ch
+        call numAcadena
+        ; ESCRIBIENDO HORA
+        mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 02
+		mov DX, offset numero + 03
+        int 21
+
+
+
+        ; agregamos los dos puntos 
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 01
+            mov DX, offset dos_puntos
+            int 21
+
+
+
+        ; agregando minuto
+        ;CH = hours
+        ;CL = minutes
+        mov ah, 2C
+        int 21
+        xor ax, ax
+        mov al, cl
+        call numAcadena
+        ; ESCRIBIENDO MINUTO
+        mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 02
+		mov DX, offset numero + 03
+        int 21
+
+
+        ; agregamos unos espacios
+        mov BX, [handleABCFile]
+        mov AH, 40
+        mov CH, 00
+        mov CL, 03
+        mov DX, offset spaces
+        int 21
+
+        ;AGREGANDO FECHA
+        ; AGREGANDO DIA
+        mov ah, 2A
+        int 21
+        xor ax, ax
+        mov al, dl
+        call numAcadena
+        ; ESCRIBIENDO DIA
+        mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 02
+		mov DX, offset numero + 03
+        int 21
+        ; agregar una diagonal
+        mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 01
+		mov DX, offset diagonal
+        int 21
+
+        ; AGREGANDO MES
+        mov ah, 2A
+        int 21
+        xor ax, ax
+        mov al, dh
+        call numAcadena
+        ; ESCRIBIENDO MES
+        mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 02
+		mov DX, offset numero + 03
+        int 21
+
+         ; agregar una diagonal
+        mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 01
+		mov DX, offset diagonal
+        int 21
+
+         ; AGREGANDO AÑO
+        mov ah, 2A
+        int 21
+        xor ax, ax
+        mov ax, cx
+        call numAcadena
+        ; ESCRIBIENDO AÑO
+        mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, 04
+		mov DX, offset numero + 01
+        int 21
+
+  
+        writehtmlABC:
+        ;encabezado del html
+		mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, [tam_encabezado_html]
+		mov DX, offset encabezado_html
+        int 21
+        ; inicializacion tabla
+        mov BX, [handleABCFile]
+		mov AH, 40
+		mov CH, 00
+		mov CL, [tam_inicializacion_tablaABC]
+		mov DX, offset inicializacion_tablaABC
+        int 21
+        ; ; LOOP ENTRE TODAS LAS LETRAS
+
+
+
+         mov [letraMin], 61 ; caracter a
+         mov [letraMay], 41 ; caracter A
+         mov iterableABC, 0
+
+        
+
+
+        ForLetras:
+            mov ax, 0000
+            mov [contadorLetra], ax
+            cmp iterableABC, 1A
+            jge SalirForLetras
+
+             ; abrimos el prod.bin
+            mov al, 2
+            mov ah, 3d
+            mov dx, offset pathProductFile
+            int 21
+            mov [handleprodFile], ax
+
+             
+
+            ; recorremos cada elemento del archivo de productos
+            loopProdcutsABC:
+                mov ah, 3F
+                mov bx, [handleprodFile]
+                mov cx, 2E
+                mov dx, offset codigoProducto
+                int 21
+                cmp ax, 0000
+                je ContinueForLetras
+                ; comparamos si empieza con la letra actual del loop
+
+                xor ax, ax
+                mov al, descProducto[0]
+                cmp [letraMin], al
+                je increaseLetterCount
+                cmp [letraMay], al
+                je increaseLetterCount
+                jmp continueReading
+                
+            
+                increaseLetterCount:
+                    inc contadorLetra 
+                    jmp loopProdcutsABC
+
+                continueReading:
+                    
+                    jmp loopProdcutsABC
+
+
+    
+        ContinueForLetras:
+            ;cerramos el archivo.bin para luego reabrirlo luego
+            mov bx, [handleprodFile]
+            mov ah, 3E
+            int 21
+            ;continue
+
+
+            ; abrir etiqueta tr
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset tr_html
+            int 21
+
+             ; abrir etiqueta td
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset td_html
+            int 21
+
+            ; escribir letra
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 01
+            xor dx, dx
+            mov dx, offset letraMay
+            int 21
+
+             ; cerrar etiqueta td
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset tdc_html
+            int 21
+
+
+
+            ;------------------
+               ;abrir etiqueta td
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 04
+            mov DX, offset td_html
+            int 21
+
+            ; escribir numero
+
+
+
+            mov ax, [contadorLetra]
+            cmp ax, 0000
+            je escribirCeros
+
+
+
+
+            call numAcadena
+
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            xor dx, dx
+            mov dx, offset numero
+            int 21
+            jmp cerrarTD
+
+            escribirCeros:
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            xor dx, dx
+            mov dx, offset ceritos
+            int 21
+
+            cerrarTD:
+
+             ; cerrar etiqueta td
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset tdc_html
+            int 21
+
+            
+            ; Escribir cierre de tr del producto
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, 05
+            mov DX, offset trc_html
+            int 21
+          
+
+
+
+            inc letraMin
+            inc letraMay
+            inc iterableABC
+            jmp ForLetras
+
+        SalirForLetras:
+         ; escribir cierre de tabla
+            mov BX, [handleABCFile]
+            mov AH, 40
+            mov CH, 00
+            mov CL, tam_cierre_tabla
+            mov DX, offset cierre_tabla
+            int 21
+
+            ; cerrar el archivo
+            mov bx, [handleABCFile]
+            mov ah, 3E
+            int 21
+        jmp displayToolsMenu
 
 
     displaySalesMenu:
         printString salesTitle
         jmp displayUserMenu
 
+
+
+; SUBRUTINAS---------------------------------------------------------------------------------
 
 
 ; SUBRUTINAS---------------------------------------------------------------------------------
@@ -1899,6 +2231,7 @@ aumentar_siguiente_digito:
 		loop ciclo_convertirAcadena
 retorno_convertirAcadena:
 		ret
+
 
 
     exit:

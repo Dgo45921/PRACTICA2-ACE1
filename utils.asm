@@ -123,6 +123,7 @@ clearVariables macro
     cmp si, 04
     jge exitForClearProduct
     mov codigoProducto[si], 00
+    mov auxcodigoProducto[si], 00
 
     inc si
     jmp ForClearProduct
