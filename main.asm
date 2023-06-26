@@ -107,13 +107,21 @@ letraMay               db     0000
     descProducto db 20 dup(0)
     productPrice db 05 dup(0)
     productUnits db 05 dup(0)
+    ; pesan 2E 
 
     numPrice   dw 0000
     numUnits   dw 0000
-    ; pesan 2E 
+    
 
     ; ESTRUCTURAS VENTAS
-
+    ventaDia db 0000
+    ventaMes db 0000
+    ventaAnio dw 0000
+    ventaHora db 0000
+    ventaMin db 0000
+    ventaCodigoProducto db 04 dup(0)
+    ventaUnidades db 0000
+    ; PESAN 11 BYTES B(HEX)
 
    
     
@@ -2332,6 +2340,58 @@ askForProductCodeToDelete:
 
     displaySalesMenu:
         printString salesTitle
+        printString newLine
+        xor si, si
+        mov [iterableABC], 0000
+
+
+        forItems:
+            cmp iterableABC, 0A
+            je exitForItems
+            ; ADENTRO DE LAS 10 ITERACIONES
+        askForProductCode2:
+        printString inserProductCode
+        saveBufferedInput inputBuffer
+        printString newLine
+        bufferPrinter inputBuffer
+        xor si, si
+        inc si
+        mov al, inputBuffer[si]
+        cmp al, 0 ; verificamos que el input sea distinto de cero
+        je askForProductCode2
+        cmp al, 05 ; verificamos que el input sea de 4 caracteres como maximo
+        jb saveProductCode2
+        jmp askForProductCode2
+    saveProductCode2:
+        xor si, si
+        inc si
+        mov bl, inputBuffer[si] ; guardamos el size del input
+        inc si
+        ; nos movemos al byte que contiene el primer caracter de la entrada
+        xor di, di
+        mov trueCond, 1
+        ; guardamos cada caracter en su respectiva variable
+        
+    forProductCode2:
+        cmp di, 04
+        je exitforProductCode2
+        mov al, inputBuffer[si]
+        cmp al, 0D
+        je exitforProductCode2
+        mov ventaCodigoProducto[di], al
+        
+        inc di
+        inc si
+        jmp forProductCode2
+
+
+    exitforProductCode2:
+            inc iterableABC
+            jmp forItems
+
+
+    exitForItems:
+
         jmp displayUserMenu
 
 
