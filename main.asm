@@ -1067,6 +1067,59 @@ ThirdConditionRegexloopProductDesc:
 
 
 ; UNA VEZ INGRESADA TODA LA DATA, NECESITAMOS VERIFICAR QUE EL ARCHIVO PROD.BIN EXISTA
+
+    ; verificar que el producto no exista antes de insertarlo
+    searchFile pathProductFile
+            jc prodFileCreator
+            mov [handleprodFile], ax
+
+    ; VERIFICANDO 
+      loopExistenProduct:
+           
+            mov ah, 3f
+            mov bx, [handleprodFile]
+            mov cx, 2E
+            mov dx, offset CloncodigoProducto
+            int 21
+            cmp ax, 0000
+            je productExistentfailed
+            ; comparamos el producto leido con el producto ingresado
+                    xor si, si
+
+
+                productExistentVerifier2:
+                    cmp si, 04
+                    jge productExistentVerifier2Exit
+                    mov al, CloncodigoProducto[si]
+                    cmp al, codigoProducto[si]
+                    jne loopExistenProduct
+                    
+
+                    
+                    inc si
+                    jmp productExistentVerifier2
+
+                productExistentVerifier2Exit:
+                    printString prodFound
+                    printString newLine
+
+                    jmp displayProductMenu     
+
+
+            jmp loopExistenProduct
+
+        productExistentfailed:
+            
+
+
+
+
+
+
+
+
+
+
     searchFile pathProductFile
         jc prodFileCreator
         mov [handleprodFile], ax
