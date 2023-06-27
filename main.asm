@@ -123,9 +123,11 @@ letraMay               db     0000
     ventaHora db 0000
     ventaMin db 0000
     ventaCodigoProducto db 04 dup(0)
-    ventaUnidades db 0000
-    ; PESAN 11 BYTES B(HEX)
-
+    ; PESAN 10 BYTES 0A(HEX)
+    venaUnitsString db 05 dup(0)
+    ventaUnidades dw 0000
+    ; Pesa 3 bytes 03
+   
    
     
 .code
@@ -2457,7 +2459,7 @@ askForProductCodeToDelete:
         mov al, inputBuffer[si]
         cmp al, 0 ; verificamos que el input sea distinto de cero
         je askForProductUnits2
-        cmp al, 06 ; verificamos que el input sea de 5 caracteres como maximo
+        cmp al, 05 ; verificamos que el input sea de 4 caracteres como maximo
         jb saveProductUnits2
         jmp askForProductUnits2
     saveProductUnits2:
@@ -2475,7 +2477,7 @@ askForProductCodeToDelete:
         mov al, inputBuffer[si]
         cmp al, 0D
         je exitforProductUnits2
-        mov productUnits[di], al
+        mov venaUnitsString[di], al
         
         inc di
         inc si
@@ -2491,7 +2493,7 @@ askForProductCodeToDelete:
         cmp si, 5
         je exitRegexLoopProductUnits2
 
-        cmp productUnits[si], 0
+        cmp venaUnitsString[si], 0
         je continueRegexloopProductUnits2
         ; verificamos que cada caracter del codigo sea letra mayus o numero
         ; condicion: if[ (caracter >= minLetra && caracter <= maxletra) || (caracter >= minNum && caracter <= maxNum) ]
@@ -2502,7 +2504,7 @@ askForProductCodeToDelete:
         FirstConditionRegexloopProductUnits2:
         ; printString lel1
         ; printString newLine
-        mov al, productUnits[si]
+        mov al, venaUnitsString[si]
         cmp al, 30
         jl clearFirstConditionRegexloopProductUnits2
         cmp al, 39
@@ -2525,25 +2527,58 @@ askForProductCodeToDelete:
             inc si
             jmp RegexloopProductUnits2
         exitRegexLoopProductUnits2:
+
+        
         ; verificando vent.bin------------------------------------------------------
+        mov ah, 2C
+        int 21
+        mov [ventaHora], ch
+        mov [ventaMin], cl
 
+        mov ah, 2A
+        int 21
+        mov [ventaDia], dl
+        mov [ventaMes], dh
+        mov [ventaAnio], cx
 
+        xor ax, ax
+        mov di, offset venaUnitsString
+        call cadenaAnum
 
+        mov [ventaUnidades], ax
+        
+        cmp [ventaUnidades], 100
+        ja  askForProductUnits2
+        ; aca deberia de buscar si existen existencias del producto
 
-
+      ;----------------------------------------------------------------
         searchFile pathVentas
         jc prodFileCreatorVentas
-        mov ah, 3D
-        mov al, 02
-        mov dx, offset pathVentas
+        mov [handleVENTASFile], ax
 
-      
+        
+        ; mover puntero al final
+        mov cx, 00
+        mov dx, 00
+        mov al, 2
+        mov ah, 42
+        mov bx, [handleVENTASFile]
+        int 21
+
         ; escribir la venta
-        ; mov bx, [handleVENTASFile]
-        ; mov cx, 0B
-        ; mov dx, offset ventaDia  
-        ; mov ah, 40
-        ; int 21
+        mov bx, [handleVENTASFile]
+        mov cx, 0A
+        mov dx, offset ventaDia  
+        mov ah, 40
+        int 21
+
+         
+         ; escribir unidades
+        mov bx, [handleVENTASFile]
+        mov cx, 02
+        mov dx, offset ventaUnidades  
+        mov ah, 40
+        int 21
         ;cerramos el archivo
         mov bx, [handleVENTASFile]
         mov ah,  3E
@@ -2558,23 +2593,26 @@ askForProductCodeToDelete:
 		mov AH, 3c
 		int 21
         mov [handleVENTASFile], ax
-        ; escribir el producto
-        ; mov bx, [handleprodFile]
-        ; mov cx, 2E
-        ; mov dx, offset codigoProducto  
-        ; mov ah, 40
-        ; int 21
+         ; escribir la venta
+        mov bx, [handleVENTASFile]
+        mov cx, 0A
+        mov dx, offset ventaDia  
+        mov ah, 40
+        int 21
+
+
+         ; escribir unidades
+        mov bx, [handleVENTASFile]
+        mov cx, 02
+        mov dx, offset ventaUnidades  
+        mov ah, 40
+        int 21
 
         ; cerramos el archivo
         mov ah,  3E
         mov bx, [handleVENTASFile]
         int 21
 
-
-
-
-
-        printString lel1
 
         
         continueIterations:
@@ -2649,6 +2687,8 @@ aumentar_siguiente_digito:
 		loop ciclo_convertirAcadena
 retorno_convertirAcadena:
 		ret
+
+        
 
 
 
