@@ -44,6 +44,7 @@ letraMay               db     0000
     credentialFileNotExistent  db "CREDENCIALES NO ENCONTRADAS","$"
     lexicalError  db "ERROR EN ARCHIVO","$"
     continueFiveProducts db "Ingrese enter si quiere ver otros 5 productos o 'q' si desea salir", "$"
+    prodNotFounc db "Producto no encontrado", "$"
     lel1  db "lel1","$"
     lel2  db "CADENA ACEPTADA","$"
     lel3  db "lel3","$"
@@ -64,11 +65,13 @@ letraMay               db     0000
     handleCatalogFile dw 0000
     handleFaltaFile dw 0000
     handleABCFile dw 0000
+    handleVENTASFile dw 0000
     pathcredentialFile db "PRAII.CON",0 ; la ruta donde asm tiene que buscar
     pathProductFile db "PROD.BIN",0 ; 
     pathCatalogFile db "CATALG.HTM",0
     pathABCFile db "ABC.HTM",0
     pathFalta db "FALTA.HTM",0
+    pathVentas db "VENT.BIN",0
     ; variables proposito general
     trueCond db 1
     condition1 db 0
@@ -1220,7 +1223,7 @@ askForProductCodeToDelete:
         mov [puntero_temp], dx
          
         cmp ax, 00
-        je closeProdFile
+        je closeProdFileNotFound
         ; loop para comparar el codigo ingresado con el codigo leido
         
         xor si, si
@@ -1253,15 +1256,26 @@ askForProductCodeToDelete:
         mov dx, offset cerosProd
         mov ah, 40
         int 21
+        jmp closeProdFile
+
 
 
         
 
     ; cerramos el archivo de productos
+    closeProdFileNotFound:
+        printString prodNotFounc
+        printString newLine
+        mov ah, 3E
+        mov bx, [handleprodFile]
+        int 21
+    jmp displayProductMenu
+
     closeProdFile:
         mov ah, 3E
         mov bx, [handleprodFile]
         int 21
+
 
 
 
@@ -2346,11 +2360,95 @@ askForProductCodeToDelete:
 
 
         forItems:
-            cmp iterableABC, 0A
+            cmp iterableABC, 03 ; TODO CAMBIAR ITERACIONES A 10
             je exitForItems
             ; ADENTRO DE LAS 10 ITERACIONES
-        askForProductCode2:
-        printString inserProductCode
+                askForProductCode2:
+                printString inserProductCode
+                saveBufferedInput inputBuffer
+                printString newLine
+                bufferPrinter inputBuffer
+                xor si, si
+                inc si
+                mov al, inputBuffer[si]
+                cmp al, 0 ; verificamos que el input sea distinto de cero
+                je askForProductCode2
+                cmp al, 05 ; verificamos que el input sea de 4 caracteres como maximo
+                jb saveProductCode2
+                jmp askForProductCode2
+            saveProductCode2:
+                xor si, si
+                inc si
+                mov bl, inputBuffer[si] ; guardamos el size del input
+                inc si
+                ; nos movemos al byte que contiene el primer caracter de la entrada
+                xor di, di
+                mov trueCond, 1
+                ; guardamos cada caracter en su respectiva variable
+                
+            forProductCode2:
+                cmp di, 04
+                je exitforProductCode2
+                mov al, inputBuffer[si]
+                cmp al, 0D
+                je exitforProductCode2
+                mov ventaCodigoProducto[di], al
+                
+                inc di
+                inc si
+                jmp forProductCode2
+
+
+
+            exitforProductCode2:
+                xor di, di
+
+
+                CFOR:
+                    cmp di, 05
+                    jge SALIRFOR
+                    cmp di, 01
+                    je comp1
+                    cmp di, 02
+                    je comp2
+                     cmp di, 03
+                    je comp3
+                    cmp di, 04
+                    je comp4
+
+
+                    comp1:
+                        cmp ventaCodigoProducto[di], 'f'
+                        jne SALIRFOR
+                        inc di
+
+
+
+                    comp2:
+                        cmp ventaCodigoProducto[di], 'i'
+                        jne SALIRFOR
+                        inc di
+
+                    comp3:
+                        cmp ventaCodigoProducto[di], 'n'
+                        jne SALIRFOR
+                        inc di
+
+                    comp4:
+                        cmp ventaCodigoProducto[di], 0D
+                        jne displayUserMenu
+
+
+                    continueFIN:
+                    inc di
+                    jmp CFOR
+
+
+                SALIRFOR:
+
+            
+            askForProductUnits2:
+        printString inserProductUnits
         saveBufferedInput inputBuffer
         printString newLine
         bufferPrinter inputBuffer
@@ -2358,11 +2456,11 @@ askForProductCodeToDelete:
         inc si
         mov al, inputBuffer[si]
         cmp al, 0 ; verificamos que el input sea distinto de cero
-        je askForProductCode2
-        cmp al, 05 ; verificamos que el input sea de 4 caracteres como maximo
-        jb saveProductCode2
-        jmp askForProductCode2
-    saveProductCode2:
+        je askForProductUnits2
+        cmp al, 06 ; verificamos que el input sea de 5 caracteres como maximo
+        jb saveProductUnits2
+        jmp askForProductUnits2
+    saveProductUnits2:
         xor si, si
         inc si
         mov bl, inputBuffer[si] ; guardamos el size del input
@@ -2371,26 +2469,121 @@ askForProductCodeToDelete:
         xor di, di
         mov trueCond, 1
         ; guardamos cada caracter en su respectiva variable
-        
-    forProductCode2:
-        cmp di, 04
-        je exitforProductCode2
+    forProductUnits2:
+        cmp di, 05
+        je exitforProductUnits2
         mov al, inputBuffer[si]
         cmp al, 0D
-        je exitforProductCode2
-        mov ventaCodigoProducto[di], al
+        je exitforProductUnits2
+        mov productUnits[di], al
         
         inc di
         inc si
-        jmp forProductCode2
+        jmp forProductUnits2
 
 
-    exitforProductCode2:
-            inc iterableABC
-            jmp forItems
+    exitforProductUnits2:
+
+    ; limpiamos si
+    xor si, si
+    mov condition1, 0
+    RegexloopProductUnits2:
+        cmp si, 5
+        je exitRegexLoopProductUnits2
+
+        cmp productUnits[si], 0
+        je continueRegexloopProductUnits2
+        ; verificamos que cada caracter del codigo sea letra mayus o numero
+        ; condicion: if[ (caracter >= minLetra && caracter <= maxletra) || (caracter >= minNum && caracter <= maxNum) ]
+        ; minletra = 41 = A(ascii) |  maxletra = 5A = Z(ascii)
+        ; minNum = 30 = 0(ascii) |  maxNum = 39 = 9(ascii)
+
+
+        FirstConditionRegexloopProductUnits2:
+        ; printString lel1
+        ; printString newLine
+        mov al, productUnits[si]
+        cmp al, 30
+        jl clearFirstConditionRegexloopProductUnits2
+        cmp al, 39
+        jg clearFirstConditionRegexloopProductUnits2
+        mov condition1, 1
+        jmp ComparationConditionRegexloopProductUnits2
+
+        clearFirstConditionRegexloopProductUnits2:
+        mov condition1, 0
+
+
+;------------------------------------------------------------------------------------------------
+        ComparationConditionRegexloopProductUnits2:
+        mov bl, condition1
+
+        cmp bl, 0
+        je askForProductUnits2
+
+        continueRegexloopProductUnits2:
+            inc si
+            jmp RegexloopProductUnits2
+        exitRegexLoopProductUnits2:
+        ; verificando vent.bin------------------------------------------------------
+
+
+
+
+
+        searchFile pathVentas
+        jc prodFileCreatorVentas
+        mov ah, 3D
+        mov al, 02
+        mov dx, offset pathVentas
+
+      
+        ; escribir la venta
+        ; mov bx, [handleVENTASFile]
+        ; mov cx, 0B
+        ; mov dx, offset ventaDia  
+        ; mov ah, 40
+        ; int 21
+        ;cerramos el archivo
+        mov bx, [handleVENTASFile]
+        mov ah,  3E
+        int 21
+        jmp continueIterations
+        
+
+
+        prodFileCreatorVentas:
+        mov CX, 0000
+		mov DX, offset pathVentas
+		mov AH, 3c
+		int 21
+        mov [handleVENTASFile], ax
+        ; escribir el producto
+        ; mov bx, [handleprodFile]
+        ; mov cx, 2E
+        ; mov dx, offset codigoProducto  
+        ; mov ah, 40
+        ; int 21
+
+        ; cerramos el archivo
+        mov ah,  3E
+        mov bx, [handleVENTASFile]
+        int 21
+
+
+
+
+
+        printString lel1
+
+        
+        continueIterations:
+                    inc iterableABC
+                    jmp forItems
 
 
     exitForItems:
+
 
         jmp displayUserMenu
 
