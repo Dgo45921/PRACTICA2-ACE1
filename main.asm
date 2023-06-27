@@ -46,6 +46,8 @@ letraMay               db     0000
     continueFiveProducts db "Ingrese enter si quiere ver otros 5 productos o 'q' si desea salir", "$"
     prodNotFounc db "Producto no encontrado", "$"
     prodFound db "PRODUCTO ENCONTRADO","$"
+    unidadesInsuficientes db "UNIDADES INSUFICIENTES","$"
+    montoOutput db "MONTO: ","$"
     prodNotFound  db "PRODUCTO INEXISTENTE","$"
     lel1  db "lel1","$"
     lel2  db "CADENA ACEPTADA","$"
@@ -129,6 +131,7 @@ letraMay               db     0000
     venaUnitsString db 05 dup(0)
     ventaUnidades dw 0000
     ; Pesa 3 bytes 03
+    montoTotalVenta dw 0000
    
    
     
@@ -2415,8 +2418,10 @@ askForProductCodeToDelete:
         xor si, si
         mov [iterableABC], 0000
 
-
+        mov [montoTotalVenta], 0000
         forItems:
+        mov [puntero_temp], 0000
+
             clearVentaInput
             cmp iterableABC, 03 ; TODO CAMBIAR ITERACIONES A 10
             je exitForItems
@@ -2612,6 +2617,9 @@ askForProductCodeToDelete:
             int 21
             cmp ax, 0000
             je productExistentVerifierExitFailed
+            mov dx, [puntero_temp]
+            add dx, 2E
+            mov [puntero_temp], dx
             ; comparamos el producto leido con el producto ingresado
                     xor si, si
 
@@ -2629,10 +2637,42 @@ askForProductCodeToDelete:
                     jmp productExistentVerifier
 
                 productExistentVerifierExit:
+                    
+
                     printString prodFound
                     printString newLine
 
-                    jmp exitProductSale
+                     ; guardando precio del producto
+                    mov di, offset productPrice
+                    call cadenaAnum
+                    mov [numPrice], ax
+
+
+                    ; guardando las unidades de los productos para luego hacer la resta
+                    mov di, offset productUnits
+                    call cadenaAnum
+                    mov [numUnits], ax
+                    ; guardando la cantidad de unidades que ingreso el usuario para la venta
+                    mov di, offset venaUnitsString
+                    call cadenaAnum
+                    mov [ventaUnidades], ax
+
+                    mov ax, numUnits
+                    cmp ax, ventaUnidades
+                    jae exitProductSale
+
+
+                    printString unidadesInsuficientes
+                    printString newLine
+
+
+
+                    jmp forItems
+
+
+
+
+                 
 
 
                 productExistentVerifierExitFailed:
@@ -2734,6 +2774,115 @@ askForProductCodeToDelete:
 
         
         continueIterations:
+                    ; aca escribir el monto
+                    printString montoOutput
+                    mov ax, [ventaUnidades]
+                    mov bx, [numPrice]
+                    mul bx
+                    mov cx, [montoTotalVenta]
+                    add ax, cx
+
+
+
+                    ; luego de hacer la suma
+                    mov [montoTotalVenta], ax
+
+
+                    call numAcadena
+
+                    ; imprimimos el monto que se lleva
+                    
+                    mov bx, 01
+                    mov di, offset numero ; guardamos la direccion del primer byte del buffer
+                    xor ch, ch
+                    mov cl, 05
+                    mov dx, di  
+                    mov ah, 40
+                    int 21
+                    printString newLine
+
+                    ; restando unidades
+                    mov ax, [numUnits]
+                    sub ax, [ventaUnidades]
+                    call numAcadena
+                    
+                    
+
+
+                    ; nos posicionamos en el producto correcto
+
+                    mov dx, [puntero_temp]
+                    sub dx, 05
+                    mov [puntero_temp], dx
+                    mov cx, 0000
+                    mov bx, [handleprodFile]
+                    mov al, 0
+                    mov ah, 42
+                    int 21
+
+
+                    ; limpiamos el numero
+                    
+                     xor si, si
+
+
+                     cleanNumbers:
+                        cmp si, 05
+                        jge exitCleanNumbers
+
+                        cmp numero[si], 30
+                        jne continueCleanNumbers
+                        mov numero[si],0000
+
+
+                        continueCleanNumbers:
+                        inc si
+                        jmp cleanNumbers
+
+
+                     exitCleanNumbers:
+                    
+
+
+                    ; escribimos las unidades
+
+                        mov cx, 05
+                        mov dx, offset numero
+                        mov ah, 40
+                        int 21
+                        
+
+
+                    
+                    ; limpiamos el numero para tener 0s
+
+                        mov bx, [handleprodFile]
+                        mov ah, 3E
+                        int 21
+                    
+                     xor si, si
+
+
+                     cleanNumbers2:
+                        cmp si, 05
+                        jge exitCleanNumbers2
+
+                       
+                        mov numero[si], 30
+
+
+                        continueCleanNumbers2:
+                        inc si
+                        jmp cleanNumbers2
+
+
+                     exitCleanNumbers2:
+
+
+
+
+
+
                     inc iterableABC
                     jmp forItems
 
