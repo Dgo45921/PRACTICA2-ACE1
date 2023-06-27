@@ -45,6 +45,8 @@ letraMay               db     0000
     lexicalError  db "ERROR EN ARCHIVO","$"
     continueFiveProducts db "Ingrese enter si quiere ver otros 5 productos o 'q' si desea salir", "$"
     prodNotFounc db "Producto no encontrado", "$"
+    prodFound db "PRODUCTO ENCONTRADO","$"
+    prodNotFound  db "PRODUCTO INEXISTENTE","$"
     lel1  db "lel1","$"
     lel2  db "CADENA ACEPTADA","$"
     lel3  db "lel3","$"
@@ -2362,6 +2364,7 @@ askForProductCodeToDelete:
 
 
         forItems:
+            clearVentaInput
             cmp iterableABC, 03 ; TODO CAMBIAR ITERACIONES A 10
             je exitForItems
             ; ADENTRO DE LAS 10 ITERACIONES
@@ -2524,12 +2527,72 @@ askForProductCodeToDelete:
         je askForProductUnits2
 
         continueRegexloopProductUnits2:
+       
             inc si
             jmp RegexloopProductUnits2
         exitRegexLoopProductUnits2:
 
+
+             ; verificando que el número sea menor a 256
+        xor ax, ax
+        mov di, offset venaUnitsString
+        call cadenaAnum
+
+        mov [ventaUnidades], ax
         
-        ; verificando vent.bin------------------------------------------------------
+        cmp [ventaUnidades], 100
+        ja  askForProductUnits2
+        ; Verificando que el producto existe
+        ; abrimos el prod.bin
+            mov al, 2
+            mov ah, 3d
+            mov dx, offset pathProductFile
+            int 21
+            mov [handleprodFile], ax
+              ; ; LOOP ENTRE TODOS LOS PRODUCTOS
+        loopProdcutsSale:
+           
+            mov ah, 3f
+            mov bx, [handleprodFile]
+            mov cx, 2E
+            mov dx, offset codigoProducto
+            int 21
+            cmp ax, 0000
+            je productExistentVerifierExitFailed
+            ; comparamos el producto leido con el producto ingresado
+                    xor si, si
+
+
+                productExistentVerifier:
+                    cmp si, 04
+                    jge productExistentVerifierExit
+                    mov al, codigoProducto[si]
+                    cmp al, ventaCodigoProducto[si]
+                    jne loopProdcutsSale
+                    
+
+                    
+                    inc si
+                    jmp productExistentVerifier
+
+                productExistentVerifierExit:
+                    printString prodFound
+                    printString newLine
+
+                    jmp exitProductSale
+
+
+                productExistentVerifierExitFailed:
+                printString prodNotFounc
+                printString newLine
+                jmp forItems
+
+
+            jmp loopProdcutsSale
+        exitProductSale:
+        
+        
+        ; preparando la data para ser escrita
         mov ah, 2C
         int 21
         mov [ventaHora], ch
@@ -2549,7 +2612,9 @@ askForProductCodeToDelete:
         
         cmp [ventaUnidades], 100
         ja  askForProductUnits2
-        ; aca deberia de buscar si existen existencias del producto
+
+       
+  
 
       ;----------------------------------------------------------------
         searchFile pathVentas

@@ -191,6 +191,24 @@ xor si, si
 
 endm
 
+
+clearVentaInput macro
+   mov ventaCodigoProducto[0],0000
+   mov ventaCodigoProducto[1],0000
+   mov ventaCodigoProducto[2],0000
+   mov ventaCodigoProducto[3],0000
+
+   mov venaUnitsString[0],0000
+   mov venaUnitsString[1],0000
+   mov venaUnitsString[2],0000
+   mov venaUnitsString[3],0000
+   mov venaUnitsString[4],0000
+    
+  
+endm
+
+
+
 bufferPrinter macro buffer2
     
     mov bx, 01
