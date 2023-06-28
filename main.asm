@@ -12,6 +12,17 @@ tam_inicializacion_tabla   db   5E
 tam_inicializacion_tablaABC   db   3A
 inicializacion_tabla   db     '<table border="1"><tr><td>codigo</td><td>descripcion</td><td>Precio</td><td>Unidades</td></tr>'
 inicializacion_tablaABC   db     '<table border="1"><tr><td>LETRA</td><td>CANTIDAD</td></tr>'
+inicializacion_repVentas   db     '<FECHA> <HORA>',0A, '======================', 0A, 'ultimas ventas:',0A
+mayorVenta db "Venta con mayor monto:",0A
+menorVenta db "Venta con menor monto:",0A
+tammayorVenta db 17
+separator                    db "----------------------------------", 0A
+tamSeparator                  db 23
+tam_inicializacion_repVentas db   36
+fechaTitle db   'Fecha: '
+tamFechaTitle db     07
+montoTitle db   'Monto: '
+tamMontoTitle db     07
 tam_cierre_tabla       db     8
 cierre_tabla           db     "</table>"
 tam_footer_html        db     0e
@@ -71,12 +82,14 @@ letraMay               db     0000
     handleFaltaFile dw 0000
     handleABCFile dw 0000
     handleVENTASFile dw 0000
+    handleRepoVentas dw 0000
     pathcredentialFile db "PRAII.CON",0 ; la ruta donde asm tiene que buscar
     pathProductFile db "PROD.BIN",0 ; 
     pathCatalogFile db "CATALG.HTM",0
     pathABCFile db "ABC.HTM",0
     pathFalta db "FALTA.HTM",0
     pathVentas db "VENT.BIN",0
+    pathRepoVentas db "REP.TXT",0
     ; variables proposito general
     trueCond db 1
     condition1 db 0
@@ -133,6 +146,20 @@ letraMay               db     0000
     ventaUnidades dw 0000
     ; Pesa 3 bytes 03
     montoTotalVenta dw 0000
+
+
+     ;ESTRUCTURAS VENTAS CLONADA
+    clonventaDia db 0000
+    clonventaMes db 0000
+    clonventaAnio dw 0000
+    clonventaHora db 0000
+    clonventaMin db 0000
+    clonventaCodigoProducto db 04 dup(0)
+    ; PESAN 10 BYTES 0A(HEX)
+    clonvenaUnitsString db 05 dup(0)
+    clonventaUnidades dw 0000
+    ; Pesa 3 bytes 03
+    clonmontoTotalVenta dw 0000
    
    
     
@@ -1356,9 +1383,804 @@ askForProductCodeToDelete:
         je generateCatalog
         cmp al, '2'
         je generateABC
+        cmp al, '3'
+        je generateSalesReport
         cmp al, '4'
         je generateFALTA
         jmp displayToolsMenu
+
+
+    generateSalesReport:
+
+     ; abrimos el vent.bin
+            mov al, 2
+            mov ah, 3d
+            mov dx, offset pathVentas
+            int 21
+            mov [handleVENTASFile], ax
+    
+
+            mov [puntero_temp], 0000
+
+     loopsales:
+           
+            mov ah, 3f
+            mov bx, [handleVENTASFile]
+            mov cx, 0A
+            mov dx, offset ventaDia
+            int 21
+            mov dx, [puntero_temp]
+            add dx, 0A
+            mov [puntero_temp], dx
+
+            
+
+            mov ah, 3f
+            mov bx, [handleVENTASFile]
+            mov cx, 04
+            mov dx, offset ventaUnidades
+            int 21
+            mov dx, [puntero_temp]
+            add dx, 04
+            mov [puntero_temp], dx
+
+            cmp ax, 0000
+            je exitloopsales
+
+
+
+            
+        
+        jmp loopsales
+
+        exitloopsales:
+
+        ; moviendo el puntero
+
+        mov dx, [puntero_temp]
+        sub dx, 54
+        mov cx, 0000
+        mov bx, [handleVENTASFile]
+        mov al, 0
+        mov ah, 42
+        int 21
+
+        ; creamos el archivo txt de ventas
+        mov ah, 3c
+        mov cx, 0
+        mov dx, offset pathRepoVentas
+        int 21
+        mov [handleRepoVentas], ax
+
+        mov BX, [handleRepoVentas]
+        mov AH, 40
+        mov CH, 00
+        mov CL, [tam_inicializacion_repVentas]
+        mov DX, offset inicializacion_repVentas
+        int 21
+    
+
+
+
+        
+     loopsales2:
+           
+            mov ah, 3f
+            mov bx, [handleVENTASFile]
+            mov cx, 0A
+            mov dx, offset ventaDia
+            int 21
+            cmp ax, 0000
+        
+            
+
+            mov ah, 3f
+            mov bx, [handleVENTASFile]
+            mov cx, 04
+            mov dx, offset ventaUnidades
+            int 21
+            cmp ax, 0000
+            je exitloopsales2
+          
+
+            ; printString lel1
+            ; printString newLine
+            ; TITULO DE LA FECHA
+            mov BX, [handleRepoVentas]
+            mov AH, 40
+            mov CH, 00
+            mov CL, [tamFechaTitle]
+            mov DX, offset fechaTitle
+            int 21
+
+            ; INGRESANDO LA FECHA
+             ;AGREGANDO FECHA
+            ; AGREGANDO DIA
+
+                xor ax, ax
+                mov al, [ventaDia]
+                call numAcadena
+                ; ESCRIBIENDO DIA
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+                ; agregar una diagonal
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset diagonal
+                int 21
+
+                xor ax, ax
+                mov al, [ventaMes]
+                call numAcadena
+
+                ; AGREGANDO MES
+                mov ah, 2A
+                int 21
+                xor ax, ax
+                mov al, dh
+                call numAcadena
+
+                xor ax, ax
+                mov al, [ventaMes]
+                call numAcadena
+                ; ESCRIBIENDO MES
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+                ; agregar una diagonal
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset diagonal
+                int 21
+
+                xor ax, ax
+                mov ax, [ventaAnio]
+                call numAcadena
+
+                ; ESCRIBIENDO AÑO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 04
+                mov DX, offset numero + 01
+                int 21
+
+                ; ESCRIBIENDO ESPACIOS
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 03
+                mov DX, offset spaces
+                int 21
+
+                xor ax, ax
+                mov al, [ventaHora]
+                call numAcadena
+                 ; ESCRIBIENDO HORA
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+
+
+                ; agregamos los dos puntos 
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset dos_puntos
+                int 21
+
+                xor ax, ax
+                mov al, [ventaMin]
+                call numAcadena
+                 ; ESCRIBIENDO MINUTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+
+
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset newLine
+                int 21
+
+
+
+
+                ; TITULO DEL MONTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, [tamMontoTitle]
+                mov DX, offset montoTitle
+                int 21
+
+                xor ax, ax
+                mov ax, [montoTotalVenta]
+                call numAcadena
+
+                 ; ESCRIBIENDO MONTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 05
+                mov DX, offset numero
+                int 21
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset newLine
+                int 21
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, [tamSeparator]
+                mov DX, offset separator
+                int 21
+
+
+
+            
+            
+        
+        jmp loopsales2
+
+        exitloopsales2:
+        ; moviendo el puntero al inicio
+        mov dx, 0000
+        mov cx, 0000
+        mov bx, [handleVENTASFile]
+        mov al, 00
+        mov ah, 42
+        int 21
+
+        mov ah, 3f
+        mov bx, [handleVENTASFile]
+        mov cx, 0A
+        mov dx, offset clonventaDia
+        int 21
+        mov dx, [puntero_temp]
+        add dx, 0A
+        mov [puntero_temp], dx
+
+            
+
+        mov ah, 3f
+        mov bx, [handleVENTASFile]
+        mov cx, 04
+        mov dx, offset clonventaUnidades
+        int 21
+        mov dx, [puntero_temp]
+        add dx, 04
+        mov [puntero_temp], dx
+
+        ; moviendo el puntero al inicio
+        mov dx, 0000
+        mov cx, 0000
+        mov bx, [handleVENTASFile]
+        mov al, 00
+        mov ah, 42
+        int 21
+
+        ; intentando hallar la venta mas grande
+        loopsalesbiggest:
+           
+            mov ah, 3f
+            mov bx, [handleVENTASFile]
+            mov cx, 0A
+            mov dx, offset ventaDia
+            int 21
+            mov dx, [puntero_temp]
+            add dx, 0A
+            mov [puntero_temp], dx
+
+            
+
+            mov ah, 3f
+            mov bx, [handleVENTASFile]
+            mov cx, 04
+            mov dx, offset ventaUnidades
+            int 21
+            mov dx, [puntero_temp]
+            add dx, 04
+            mov [puntero_temp], dx
+
+            cmp ax, 0000
+            je exitloopsalesbiggest
+
+
+            mov ax, [montoTotalVenta]
+            cmp ax, clonmontoTotalVenta
+            jg hacercambioclon
+            jmp loopsalesbiggest
+            hacercambioclon:
+                ; pasamos el monto total al clon asi como sus demas atributos
+                mov [clonmontoTotalVenta], ax
+                ; movemos dia
+                mov al, [ventaDia]
+                mov clonventaDia, al
+                 ; movemos mes
+                mov al, [ventaMes]
+                mov clonventaMes, al
+
+                ; movemos anio
+                mov ax, [ventaAnio]
+                mov [clonventaAnio], ax
+
+                 ; movemos hora
+                mov al, [ventaHora]
+                mov clonventaHora, al
+                ; movemos minuto
+                mov al, [ventaMin]
+                mov clonventaMin, al
+            
+
+
+
+            
+        
+        jmp loopsalesbiggest
+
+        exitloopsalesbiggest:
+
+         ; ESCRIBIENDO TITULO MAYOR MONTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, tammayorVenta
+                mov DX, offset mayorVenta
+                int 21
+
+
+                xor ax, ax
+                mov al, [clonventaDia]
+                call numAcadena
+                ; ESCRIBIENDO DIA
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+                ; agregar una diagonal
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset diagonal
+                int 21
+
+                xor ax, ax
+                mov al, [clonventaMes]
+                call numAcadena
+
+                ; AGREGANDO MES
+                mov ah, 2A
+                int 21
+                xor ax, ax
+                mov al, dh
+                call numAcadena
+
+                xor ax, ax
+                mov al, [clonventaMes]
+                call numAcadena
+                ; ESCRIBIENDO MES
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+                ; agregar una diagonal
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset diagonal
+                int 21
+
+                xor ax, ax
+                mov ax, [clonventaAnio]
+                call numAcadena
+
+                ; ESCRIBIENDO AÑO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 04
+                mov DX, offset numero + 01
+                int 21
+
+                ; ESCRIBIENDO ESPACIOS
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 03
+                mov DX, offset spaces
+                int 21
+
+                xor ax, ax
+                mov al, [clonventaHora]
+                call numAcadena
+                 ; ESCRIBIENDO HORA
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+
+
+                ; agregamos los dos puntos 
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset dos_puntos
+                int 21
+
+                xor ax, ax
+                mov al, [clonventaMin]
+                call numAcadena
+                 ; ESCRIBIENDO MINUTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+
+
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset newLine
+                int 21
+
+
+
+
+                ; TITULO DEL MONTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, [tamMontoTitle]
+                mov DX, offset montoTitle
+                int 21
+
+                xor ax, ax
+                mov ax, [clonmontoTotalVenta]
+                call numAcadena
+
+                 ; ESCRIBIENDO MONTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 05
+                mov DX, offset numero
+                int 21
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset newLine
+                int 21
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, [tamSeparator]
+                mov DX, offset separator
+                int 21
+    ; LO MISMO PERO CON EL MONTO MAS PEQUE
+    ; moviendo el puntero al inicio
+        mov dx, 0000
+        mov cx, 0000
+        mov bx, [handleVENTASFile]
+        mov al, 00
+        mov ah, 42
+        int 21
+
+        mov ah, 3f
+        mov bx, [handleVENTASFile]
+        mov cx, 0A
+        mov dx, offset clonventaDia
+        int 21
+        mov dx, [puntero_temp]
+        add dx, 0A
+        mov [puntero_temp], dx
+
+            
+
+        mov ah, 3f
+        mov bx, [handleVENTASFile]
+        mov cx, 04
+        mov dx, offset clonventaUnidades
+        int 21
+        mov dx, [puntero_temp]
+        add dx, 04
+        mov [puntero_temp], dx
+
+        ; moviendo el puntero al inicio
+        mov dx, 0000
+        mov cx, 0000
+        mov bx, [handleVENTASFile]
+        mov al, 00
+        mov ah, 42
+        int 21
+
+        ; intentando hallar la venta mas grande
+        loopsalessmallest:
+           
+            mov ah, 3f
+            mov bx, [handleVENTASFile]
+            mov cx, 0A
+            mov dx, offset ventaDia
+            int 21
+            mov dx, [puntero_temp]
+            add dx, 0A
+            mov [puntero_temp], dx
+
+            
+
+            mov ah, 3f
+            mov bx, [handleVENTASFile]
+            mov cx, 04
+            mov dx, offset ventaUnidades
+            int 21
+            mov dx, [puntero_temp]
+            add dx, 04
+            mov [puntero_temp], dx
+
+            cmp ax, 0000
+            je exitloopsalessmallest
+
+
+            mov ax, [montoTotalVenta]
+            cmp ax, clonmontoTotalVenta
+            jl hacercambioclon2
+            jmp loopsalessmallest
+            hacercambioclon2:
+                ; pasamos el monto total al clon asi como sus demas atributos
+                mov [clonmontoTotalVenta], ax
+                ; movemos dia
+                mov al, [ventaDia]
+                mov clonventaDia, al
+                 ; movemos mes
+                mov al, [ventaMes]
+                mov clonventaMes, al
+
+                ; movemos anio
+                mov ax, [ventaAnio]
+                mov [clonventaAnio], ax
+
+                 ; movemos hora
+                mov al, [ventaHora]
+                mov clonventaHora, al
+                ; movemos minuto
+                mov al, [ventaMin]
+                mov clonventaMin, al
+            
+
+
+
+            
+        
+        jmp loopsalessmallest
+
+        exitloopsalessmallest:
+
+         ; ESCRIBIENDO TITULO MAYOR MONTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, tammayorVenta
+                mov DX, offset menorVenta
+                int 21
+
+
+                xor ax, ax
+                mov al, [clonventaDia]
+                call numAcadena
+                ; ESCRIBIENDO DIA
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+                ; agregar una diagonal
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset diagonal
+                int 21
+
+                xor ax, ax
+                mov al, [clonventaMes]
+                call numAcadena
+
+                ; AGREGANDO MES
+                mov ah, 2A
+                int 21
+                xor ax, ax
+                mov al, dh
+                call numAcadena
+
+                xor ax, ax
+                mov al, [clonventaMes]
+                call numAcadena
+                ; ESCRIBIENDO MES
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+                ; agregar una diagonal
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset diagonal
+                int 21
+
+                xor ax, ax
+                mov ax, [clonventaAnio]
+                call numAcadena
+
+                ; ESCRIBIENDO AÑO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 04
+                mov DX, offset numero + 01
+                int 21
+
+                ; ESCRIBIENDO ESPACIOS
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 03
+                mov DX, offset spaces
+                int 21
+
+                xor ax, ax
+                mov al, [clonventaHora]
+                call numAcadena
+                 ; ESCRIBIENDO HORA
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+
+
+                ; agregamos los dos puntos 
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset dos_puntos
+                int 21
+
+                xor ax, ax
+                mov al, [clonventaMin]
+                call numAcadena
+                 ; ESCRIBIENDO MINUTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 02
+                mov DX, offset numero + 03
+                int 21
+
+
+
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset newLine
+                int 21
+
+
+
+
+                ; TITULO DEL MONTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, [tamMontoTitle]
+                mov DX, offset montoTitle
+                int 21
+
+                xor ax, ax
+                mov ax, [clonmontoTotalVenta]
+                call numAcadena
+
+                 ; ESCRIBIENDO MONTO
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 05
+                mov DX, offset numero
+                int 21
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, 01
+                mov DX, offset newLine
+                int 21
+
+                mov BX, [handleRepoVentas]
+                mov AH, 40
+                mov CH, 00
+                mov CL, [tamSeparator]
+                mov DX, offset separator
+                int 21
+
+
+
+
+
+        ; cerrar el archivo
+            mov bx, [handleRepoVentas]
+            mov ah, 3E
+            int 21
+
+
+
+
+
+
+
+
+        jmp displayToolsMenu
+
+
+
+
+
+
 
     generateCatalog:
         ; abrimos el prod.bin
@@ -1367,6 +2189,7 @@ askForProductCodeToDelete:
             mov dx, offset pathProductFile
             int 21
             mov [handleprodFile], ax
+            
 
 
         
@@ -2424,7 +3247,7 @@ askForProductCodeToDelete:
         mov [puntero_temp], 0000
 
             clearVentaInput
-            cmp iterableABC, 03 ; TODO CAMBIAR ITERACIONES A 10
+            cmp iterableABC, 0A ; TODO CAMBIAR ITERACIONES A 10
             je exitForItems
             ; ADENTRO DE LAS 10 ITERACIONES
                 askForProductCode2:
@@ -2738,11 +3561,8 @@ askForProductCodeToDelete:
         mov dx, offset ventaUnidades  
         mov ah, 40
         int 21
-        ;cerramos el archivo
-        mov bx, [handleVENTASFile]
-        mov ah,  3E
-        int 21
         jmp continueIterations
+
         
 
 
@@ -2767,10 +3587,6 @@ askForProductCodeToDelete:
         mov ah, 40
         int 21
 
-        ; cerramos el archivo
-        mov ah,  3E
-        mov bx, [handleVENTASFile]
-        int 21
 
 
         
@@ -2787,9 +3603,25 @@ askForProductCodeToDelete:
 
                     ; luego de hacer la suma
                     mov [montoTotalVenta], ax
-
-
+                    mov ax, [montoTotalVenta]
                     call numAcadena
+
+                   ; escribir monto total
+                    mov bx, [handleVENTASFile]
+                    mov cx, 02
+                    mov dx, offset montoTotalVenta  
+                    mov ah, 40
+                    int 21
+
+                            ; cerramos el archivo
+                    mov ah,  3E
+                    mov bx, [handleVENTASFile]
+                    int 21
+
+
+                  
+
+                    
 
                     ; imprimimos el monto que se lleva
                     
@@ -2806,6 +3638,8 @@ askForProductCodeToDelete:
                     mov ax, [numUnits]
                     sub ax, [ventaUnidades]
                     call numAcadena
+
+                  
                     
                     
 
