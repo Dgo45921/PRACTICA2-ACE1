@@ -32,6 +32,7 @@ letraMay               db     0000
     ClonproductUnits db 05 dup(0)
     cerosProd db 2E dup(0)
     numero    db   05 dup (30)
+    numeroInvert    db   05 dup (0000)
 
     ;mensajes -------------------------------------------------------------------------------------------------------
     mensajeBienvenida db "----------------------------------------------",0A,"Universidad de San Carlos de Guatemala" ,0A , "Facultad de ingenieria", 0A,"Escuela de Vacaciones",0A,"Arquitectura de Computadores y Ensambladores 1",0A,"Diego Andres Huite Alvarez",0A, "202003585",0A, "----------------------------------------------" ,"$"
@@ -2841,19 +2842,90 @@ askForProductCodeToDelete:
 
 
                      exitCleanNumbers:
+
+                       ; invertimos el numero 
+                     xor si, si
                     
 
 
-                    ; escribimos las unidades
+                     findUnequalToZerofor:
+                        cmp si, 05
+                        je exitfindUnequalToZeroFor
+                        cmp numero[si], 0000
+                        je continuefindUnequalToZero
+                        mov [contadorLetra], si
+                        jmp exitfindUnequalToZeroFor 
+                       
 
+                        
+                        continuefindUnequalToZero:
+                        inc si
+                        jmp findUnequalToZerofor
+
+
+                     exitfindUnequalToZeroFor:
+
+                    cmp [contadorLetra], 05
+                    jne inversor
+                    mov al, numero[5]
+                    mov numeroInvert[0],al
+                    jmp exitINverter
+
+
+                    
+                    inversor:
+                    xor si,si
+                    mov si, [contadorLetra]
+                    xor di, di
+                     inverter:
+                        cmp si, 05
+                        je exitINverter
+                        mov al, numero[si]
+                        mov numeroInvert[di], al
+                        
+                       
+
+                        
+                       
+                        inc si
+                        inc di
+                        jmp inverter
+
+
+                     exitINverter:
+
+
+                    
+                    cmp numeroInvert[0], '6'
+                    jne noescribirCeritos
+                    cmp numeroInvert[1], '5'
+                    jne noescribirCeritos
+                    cmp numeroInvert[2], '5'
+                    jne noescribirCeritos
+                    cmp numeroInvert[3], '3'
+                    jne noescribirCeritos
+                    cmp numeroInvert[4], '6'
+                    jne noescribirCeritos
+                    jmp escribirceritos
+
+                    ; escribimos las unidades
+                    noescribirCeritos:
                         mov cx, 05
-                        mov dx, offset numero
+                        mov dx, offset numeroInvert
                         mov ah, 40
                         int 21
+                        jmp checkpoint2
+
+                    escribirceritos:
+                        mov cx, 05
+                        mov dx, offset ceritos
+                        mov ah, 40
+                        int 21
+
                         
 
 
-                    
+                    checkpoint2:
                     ; limpiamos el numero para tener 0s
 
                         mov bx, [handleprodFile]
@@ -2869,6 +2941,7 @@ askForProductCodeToDelete:
 
                        
                         mov numero[si], 30
+                        mov numeroInvert[si], 0000
 
 
                         continueCleanNumbers2:
@@ -2881,6 +2954,11 @@ askForProductCodeToDelete:
 
 
 
+
+
+                    inc iterableABC
+                    jmp forItems
+                    
 
 
                     inc iterableABC
